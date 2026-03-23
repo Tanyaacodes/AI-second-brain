@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "Dea Clipper",
+    "version": "1.0",
+    "description": "Save anything from the web to your Dea Brain.",
+    "permissions": ["activeTab", "scripting"],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": "icons/128.png"
+    },
+    "icons": {
+        "128": "icons/128.png"
+    }
+}
