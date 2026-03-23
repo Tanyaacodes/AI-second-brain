@@ -5,7 +5,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "optional_key_for_no_open_api_key_usage",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const tokenizer = new natural.WordTokenizer();
@@ -22,7 +22,7 @@ export const processKnowledge = async (text, providedTags = []) => {
   let summary = "";
 
   try {
-    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "optional_key_for_no_open_api_key_usage") {
+    if (process.env.OPENAI_API_KEY) {
       // AI Processing (OpenAI)
       const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
