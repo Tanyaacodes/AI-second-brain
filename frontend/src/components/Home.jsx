@@ -1,321 +1,378 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { AnimatePresence, motion } from 'framer-motion';
+
+import Navbar from './Navbar';
+import Dashboard from './Dashboard';
+import Clipper from './Clipper';
+import KnowledgeCard from './KnowledgeCard';
 import KnowledgeGraph from './KnowledgeGraph';
-import { Search, Plus, Sparkles, Pin, History, Link, Filter, Globe, ChevronRight, Share2, Trash2, BrainCircuit } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-const API_BASE = 'http://localhost:5000/api/v1/knowledge';
+import { Search, Globe, Filter, FolderPlus, Folder } from 'lucide-react';
 
-const Home = () => {
-  const [items, setItems] = useState([]);
-  const [memories, setMemories] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all"); 
-  const [isSaving, setIsSaving] = useState(false);
-  const [isScraping, setIsScraping] = useState(false);
-  const [newSave, setNewSave] = useState({ title: "", url: "", content: "", type: "article", tags: "" });
+const API_BASE = `${import.meta.env.VITE_API_URL}/v1/knowledge`;
 
-  const fetchItems = async () => {
-    try {
-      const res = await axios.get(API_BASE);
-      setItems(res.data.data);
-    } catch (err) { console.error("Fetch Error:", err); }
-  };
+const getRelativeTime = (date) => {
+    const diffInDays = Math.floor((new Date() - new Date(date)) / (1000 * 60 * 60 * 24));
+    if (diffInDays === 0) return "Today";
+    if (diffInDays === 1) return "Yesterday";
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    return `${Math.floor(diffInDays / 30)} months ago`;
+};
 
-  const fetchMemories = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/resurface`);
-      setMemories(res.data.data);
-    } catch (err) { console.error("Memory Error:", err); }
-  };
+const Home = ({ currentUser, onLogout }) => {
+    const [items, setItems] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchPageQuery, setSearchPageQuery] = useState("");
+    const [activeView, setActiveView] = useState("dashboard");
+    const [activeFilter, setActiveFilter] = useState("all");
+    const [isSaving, setIsSaving] = useState(false);
+    
+    // Graph view states
+    const [graphLabelsOn, setGraphLabelsOn] = useState(false);
+    const [graphInteractiveOn, setGraphInteractiveOn] = useState(true);
+    const [isScraping, setIsScraping] = useState(false);
+    
+    const [newSave, setNewSave] = useState({ title: "", url: "", content: "", type: "article", tags: "", collectionName: "" });
 
-  useEffect(() => {
-    fetchItems();
-    fetchMemories();
-  }, []);
+    const [memories, setMemories] = useState([]);
+    const [collections, setCollections] = useState([]);
 
-  const handleSearch = async (val) => {
-    setSearchQuery(val);
-    if(val.trim().length > 0) {
-      try {
-        const res = await axios.get(`${API_BASE}/search?q=${encodeURIComponent(val)}`);
-        setItems(res.data.data);
-      } catch (err) { console.error("Search Error:", err); }
-    } else {
-      fetchItems();
-    }
-  };
+    const fileInputRef = useRef(null);
 
-  const handleUrlPaste = async (inputUrl) => {
-    setNewSave(prev => ({ ...prev, url: inputUrl }));
-    if(inputUrl.startsWith('http')) {
-        setIsScraping(true);
+    const fetchItems = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/scrape?url=${encodeURIComponent(inputUrl)}`);
-            if(res.data.success) {
-                setNewSave(prev => ({ 
-                    ...prev, 
-                    title: res.data.data.title || prev.title,
-                    content: res.data.data.content || prev.content 
-                }));
-            }
-        } catch (err) { console.error("Scrape Error:", err); }
-        setIsScraping(false);
-    }
-  };
+            const res = await axios.get(API_BASE);
+            setItems(res.data.data);
+        } catch (err) { console.error("Fetch Error:", err); }
+    };
 
-  const handleSave = async () => {
-    if(!newSave.url) return alert("Please provide a URL or content.");
-    setIsSaving(true);
-    try {
-      await axios.post(`${API_BASE}/save`, {
-        ...newSave,
-        tags: newSave.tags ? newSave.tags.split(',').map(t => t.trim()) : []
-      });
-      setNewSave({ title: "", url: "", content: "", type: "article", tags: "" });
-      fetchItems();
-    } catch (err) { console.error("Save Error:", err); }
-    setIsSaving(false);
-  };
-
-  const handleDelete = async (id) => {
-    if(window.confirm("Purge this from your brain memory?")) {
+    const fetchResurface = async () => {
         try {
-            await axios.delete(`${API_BASE}/${id}`);
+            const res = await axios.get(`${API_BASE}/resurface`);
+            setMemories(res.data.data);
+        } catch (err) { console.error("Memory Error:", err); }
+    };
+
+    const fetchCollections = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/collections`);
+            setCollections(res.data.data);
+        } catch (err) { 
+            console.error("Collections Error:", err); 
+            setCollections(["Uncategorized", "General", "Frontend", "UI"]);
+        }
+    };
+
+    useEffect(() => {
+        fetchItems();
+        fetchResurface();
+        fetchCollections();
+    }, []);
+
+    const performSearch = async (val) => {
+        setSearchQuery(val);
+        const normalizedQuery = val.trim().toLowerCase();
+        if (normalizedQuery.length > 0) {
+            try {
+                const res = await axios.get(`${API_BASE}/search?q=${encodeURIComponent(normalizedQuery)}`);
+                setItems(res.data.data);
+            } catch (err) { console.error("Search Error:", err); }
+        } else {
             fetchItems();
-        } catch (err) { console.error("Delete Error:", err); }
-    }
-  };
+        }
+    };
 
-  const filteredItems = items.filter(i => activeTab === 'all' || i.type === activeTab);
+    const scrapeTimeoutRef = useRef(null);
 
-  return (
-    <div className="min-h-screen bg-[#050505] text-[#F9FAFB] font-sans selection:bg-blue-500/30 overflow-hidden flex flex-col">
-      
-      {/* Background Glow */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/5 blur-[120px] rounded-full" />
-      </div>
-
-      <div className="flex-1 flex max-w-screen-2xl mx-auto w-full relative z-10">
+    const handleUrlPaste = (inputUrl) => {
+        const isVideo = inputUrl.includes('youtube.com') || inputUrl.includes('youtu.be');
+        setNewSave(prev => ({ 
+            ...prev, 
+            url: inputUrl,
+            type: isVideo ? 'video' : 'article'
+        }));
         
-        {/* Sidebar Navigation */}
-        <aside className="w-20 lg:w-64 border-r border-white/10 p-6 flex flex-col gap-10 hidden md:flex backdrop-blur-3xl bg-black/20">
-            <div className="px-2 flex items-center gap-2">
-                <BrainCircuit className="text-blue-500" size={24} />
-                <h1 className="text-2xl font-bold tracking-tighter bg-gradient-to-r from-white to-white/40 bg-clip-text text-transparent hidden lg:block">Dea.ai</h1>
-            </div>
-            
-            <nav className="flex-1 flex flex-col gap-2">
-                {['all', 'article', 'video', 'tweet', 'pdf'].map(tab => (
-                    <button 
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${activeTab === tab ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <Filter size={16} />
-                        <span className="capitalize hidden lg:block">{tab}</span>
-                    </button>
-                ))}
-            </nav>
+        if (scrapeTimeoutRef.current) clearTimeout(scrapeTimeoutRef.current);
+        
+        if (inputUrl.startsWith('http') && inputUrl.length > 10) {
+            scrapeTimeoutRef.current = setTimeout(async () => {
+                setIsScraping(true);
+                try {
+                    const res = await axios.get(`${API_BASE}/scrape?url=${encodeURIComponent(inputUrl)}`);
+                    if (res.data.success && (res.data.data.title || res.data.data.content)) {
+                        setNewSave(prev => ({ 
+                            ...prev, 
+                            title: res.data.data.title || prev.title, 
+                            content: res.data.data.content || prev.content 
+                        }));
+                    }
+                } catch (err) { console.error("Scrape Error:", err); }
+                setIsScraping(false);
+            }, 1000);
+        }
+    };
 
-            <div className="p-4 bg-gradient-to-br from-blue-500/20 to-transparent rounded-2xl border border-blue-500/20">
-                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">Memory Status</p>
-                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div className="w-[85%] h-full bg-blue-400" />
-                </div>
-                <p className="text-[10px] text-white/40 mt-2">Semantic Core Active</p>
-            </div>
-        </aside>
+    const handleSave = async () => {
+        if (!newSave.url) return;
+        setIsSaving(true);
+        try {
+            await axios.post(`${API_BASE}/save`, newSave);
+            setNewSave({ title: "", url: "", content: "", type: "article", tags: "", collectionName: "" });
+            fetchItems();
+            fetchResurface();
+            fetchCollections();
+            setActiveView('archive');
+        } catch (err) { console.error("Save Error:", err); }
+        setIsSaving(false);
+    };
 
-        {/* Main Interface */}
-        <div className="flex-1 flex flex-col min-w-0">
-          
-          {/* Top Bar / Search */}
-          <header className="p-6 flex flex-col lg:flex-row justify-between items-center gap-6 border-b border-white/5 bg-black/10 backdrop-blur-md sticky top-0 z-50">
-            <div className="relative w-full max-w-2xl group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-blue-400 transition-colors" />
-                <input 
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    placeholder="Search titles, tags or topics..."
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-2xl py-3.5 pl-12 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-light"
-                />
-            </div>
-            <div className="flex items-center gap-4">
-                <button className="p-2.5 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all text-blue-400">
-                    <Sparkles size={18} />
-                </button>
-            </div>
-          </header>
+    const handleRevisit = async (id) => {
+        setItems(prev => prev.map(it => it._id === id ? {...it, revisit: !it.revisit} : it));
+        try {
+            await axios.put(`${API_BASE}/${id}/revisit`);
+            fetchResurface();
+            fetchItems();
+        } catch (err) { fetchItems(); }
+    };
 
-          {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto p-6 md:p-8 space-y-10 custom-scrollbar">
-            
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                
-                {/* Left Column: Feed & Graph */}
-                <div className="lg:col-span-8 space-y-10">
-                    
-                    {/* Visual Section */}
-                    <section className="space-y-4">
-                        <div className="flex items-center justify-between px-2">
-                            <div>
-                                <h2 className="text-sm font-bold uppercase tracking-widest text-white/80">Brain Topology</h2>
-                                <p className="text-[10px] text-white/30 italic">Interactive visualization of related concepts</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-white/50 uppercase tracking-tighter">Live Neural Sync</span>
-                            </div>
-                        </div>
-                        <div className="p-1.5 bg-black/40 rounded-3xl shadow-2xl border border-white/5 overflow-hidden">
-                            <KnowledgeGraph items={items} />
-                        </div>
-                    </section>
+    const handleDelete = async (id) => {
+        if (window.confirm("Purge memory?")) {
+            setItems(prev => prev.filter(it => it._id !== id));
+            try { await axios.delete(`${API_BASE}/${id}`); } catch (err) { fetchItems(); }
+        }
+    };
 
-                    {/* Content Section */}
-                    <section className="space-y-6">
-                         <div className="flex items-center gap-3 px-2">
-                            <History size={18} className="text-blue-500" />
-                            <h2 className="font-bold text-lg">Knowledge Store</h2>
-                         </div>
+    const filteredItems = items.filter(item => {
+        if (activeFilter === 'all') return true;
+        const isYT = item.url?.includes('youtube.com') || item.url?.includes('youtu.be');
+        
+        if (activeFilter === 'article') return (item.type === 'article' || item.type === 'link') && !isYT;
+        if (activeFilter === 'video') return item.type === 'video' || isYT;
+        
+        return item.type === activeFilter;
+    });
 
-                        {filteredItems.length === 0 ? (
-                            <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
-                                <div className="p-4 bg-white/5 rounded-full"><Plus className="text-white/20" /></div>
-                                <p className="text-white/30 text-sm">Your knowledge pool is empty.<br/>Save a link to see it appear here.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <AnimatePresence mode='popLayout'>
-                                    {filteredItems.map((item, idx) => (
-                                        <motion.div 
-                                            key={item._id}
-                                            layout
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            className="group p-6 bg-white/[0.03] border border-white/[0.08] hover:border-blue-500/30 rounded-3xl hover:bg-white/[0.05] transition-all relative flex flex-col"
-                                        >
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`w-2 h-2 rounded-full ${item.type === 'video' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'}`} />
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">{item.type}</span>
-                                                </div>
-                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                                    <button 
-                                                        onClick={() => handleDelete(item._id)}
-                                                        className="p-1.5 bg-white/5 rounded-lg border border-white/10 text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-all"
-                                                    >
-                                                        <Trash2 size={12}/>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <h3 className="font-semibold text-white/90 group-hover:text-white transition-colors line-clamp-2 leading-relaxed mb-4">{item.title}</h3>
-                                            
-                                            <div className="flex flex-wrap gap-2 mt-auto pb-2">
-                                                {item.tags?.map(tag => (
-                                                    <span key={tag} className="px-2.5 py-1 bg-blue-500/5 rounded-full text-[10px] text-blue-400/60 border border-blue-500/10"># {tag}</span>
-                                                ))}
-                                            </div>
-                                            
-                                            <a href={item.url} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 p-2 bg-blue-500/10 rounded-full text-blue-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white">
-                                                <ChevronRight size={16} />
-                                            </a>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-                        )}
-                    </section>
-                </div>
+    // Derived Component Views
+    const ClipperComponent = <Clipper 
+        newSave={newSave}
+        setNewSave={setNewSave}
+        handleUrlPaste={handleUrlPaste}
+        handleSave={handleSave}
+        isSaving={isSaving}
+        isScraping={isScraping}
+    />;
 
-                {/* Right Column: Clipper & Memories */}
-                <div className="lg:col-span-4 space-y-8">
-                    
-                    {/* Floating Save Tool */}
-                    <div className="sticky top-24 bg-[#0A0A0A]/80 backdrop-blur-3xl p-8 rounded-[32px] border border-white/10 shadow-2xl space-y-6">
-                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-blue-500 rounded-2xl shadow-lg shadow-blue-500/30">
-                                <Link size={20} className="text-white" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold">Neural Clipper</h3>
-                                <p className="text-[11px] text-white/40 italic">Paste link to commit to memory</p>
-                            </div>
-                         </div>
+    return (
+        <div className="flex flex-col h-screen bg-[#0A0A0A] text-[#F9FAFB] font-sans overflow-hidden">
+            <Navbar activeView={activeView} setActiveView={setActiveView} currentUser={currentUser} onLogout={onLogout} />
 
-                         <div className="space-y-4">
-                            <div className="relative">
-                                <Globe className={`absolute left-4 top-1/2 -translate-y-1/2 size-4 transition-all ${isScraping ? 'text-blue-400 animate-spin' : 'text-white/30'}`} />
-                                <input 
-                                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
-                                    placeholder="Paste URL..."
-                                    value={newSave.url}
-                                    onChange={(e) => handleUrlPaste(e.target.value)}
-                                />
-                            </div>
-                            
-                            <input 
-                                className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl py-3.5 px-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all"
-                                placeholder={isScraping ? "Scraping page data..." : "Optional Title"}
-                                value={newSave.title}
-                                onChange={(e) => setNewSave({...newSave, title: e.target.value})}
-                            />
-                            
-                            <textarea 
-                                className="w-full h-32 bg-white/[0.05] border border-white/[0.1] rounded-2xl py-4 px-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none transition-all"
-                                placeholder="Add highlights or notes..."
-                                value={newSave.content}
-                                onChange={(e) => setNewSave({...newSave, content: e.target.value})}
-                            />
+            <div className="flex-1 flex flex-col relative z-20 overflow-hidden">
 
-                            <button 
-                                onClick={handleSave}
-                                disabled={isSaving || !newSave.url}
-                                className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 transition-all font-bold text-sm tracking-wide shadow-xl ${isSaving ? 'bg-white/10 text-white/20' : 'bg-white text-black hover:bg-blue-400 hover:text-white'}`}
-                            >
-                                {isSaving ? <Sparkles className="animate-spin" size={18} /> : <Plus size={18} />}
-                                {isSaving ? "Organizing Knowledge..." : "Commit to Memory"}
-                            </button>
-                         </div>
-                    </div>
 
-                    {/* AI Insights & Memories */}
-                    <div className="p-8 bg-gradient-to-br from-purple-500/10 to-transparent rounded-[32px] border border-purple-500/20 space-y-6">
-                        <div className="flex items-center gap-3">
-                            <Sparkles className="text-purple-400" size={18} />
-                            <h3 className="font-bold text-purple-100">Neural Recall</h3>
-                        </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar pt-10 px-10 pb-20">
+                    <AnimatePresence mode="wait">
                         
-                        {memories.length > 0 ? (
-                            <div className="space-y-4">
-                                <p className="text-[11px] text-purple-200/40 uppercase tracking-widest font-bold">Resurfaced from history</p>
-                                {memories.map(m => (
-                                    <div key={m._id} className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-purple-500/30 transition-all cursor-pointer">
-                                        <p className="text-xs font-semibold text-white/90 line-clamp-1 mb-2">{m.title}</p>
-                                        <p className="text-[10px] text-white/30 line-clamp-2">{m.content}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="px-4 py-8 text-center bg-black/20 rounded-2xl border border-dashed border-white/5">
-                                <History size={24} className="mx-auto text-white/10 mb-2" />
-                                <p className="text-[11px] text-white/20">Collecting history to resurface memories later.</p>
-                            </div>
+                        {/* Phase 2: Refined Dashboard */}
+                        {activeView === 'dashboard' && (
+                            <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                <Dashboard 
+                                    items={items} 
+                                    memories={memories} 
+                                    onDelete={handleDelete}
+                                    onRevisit={handleRevisit}
+                                    getRelativeTime={getRelativeTime}
+                                    setActiveView={setActiveView}
+                                    ClipperComponent={ClipperComponent} 
+                                    currentUser={currentUser}
+                                />
+                            </motion.div>
                         )}
-                    </div>
 
+                        {/* Phase 3: Library with Filters exactly like Cortex Image 2 */}
+                        {activeView === 'archive' && (
+                            <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-5xl font-black tracking-tighter text-white">Your Library</h2>
+                                    <button className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black tracking-widest uppercase hover:bg-orange-500 hover:text-white transition-all shadow-xl flex items-center gap-2">
+                                        <Filter size={14} /> Sort & Filter
+                                    </button>
+                                </div>
+                                
+                                <div className="flex items-center gap-4 border-b border-white/5 pb-4">
+                                     {['all', 'article', 'tweet', 'video', 'note', 'pdf'].map(tab => (
+                                        <button 
+                                            key={tab}
+                                            onClick={() => setActiveFilter(tab)}
+                                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[2px] transition-all flex items-center gap-2 ${
+                                                activeFilter === tab 
+                                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' 
+                                                : 'bg-white/5 text-white/40 hover:bg-white/10 border border-white/5'
+                                            }`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {filteredItems.map(item => (
+                                        <KnowledgeCard key={item._id} item={item} onDelete={handleDelete} onRevisit={handleRevisit} getRelativeTime={getRelativeTime} />
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                        
+                        {/* Phase 4: Full Page Search like Cortex Image 3 */}
+                        {activeView === 'search' && (
+                            <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col justify-start items-center pt-20 overflow-y-auto">
+                                <h1 className="text-[64px] font-black text-white tracking-tighter mb-12">Search Your Memory</h1>
+                                <div className="w-full max-w-4xl relative">
+                                    <Search size={24} className="absolute left-8 top-1/2 -translate-y-1/2 text-white/30" />
+                                    <input 
+                                         className="w-full bg-white/[0.03] border border-white/[0.08] p-8 pl-20 pr-48 rounded-[48px] text-2xl font-black text-white outline-none focus:border-orange-500/50 focus:bg-white/5 transition-all shadow-2xl"
+                                         placeholder="Search for... 'design patterns'..."
+                                         value={searchPageQuery}
+                                         onChange={(e) => {
+                                            setSearchPageQuery(e.target.value);
+                                            performSearch(e.target.value);
+                                         }}
+                                    />
+                                    <button 
+                                        onClick={() => performSearch(searchPageQuery)}
+                                        className="absolute right-6 top-1/2 -translate-y-1/2 bg-orange-500 text-white px-8 py-4 rounded-[32px] font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-white hover:text-black transition-all border-2 border-transparent hover:border-orange-500"
+                                    >
+                                        Search Burfi
+                                    </button>
+                                </div>
+                                <div className="mt-20 w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
+                                    {searchPageQuery.length > 0 && items.length === 0 && (
+                                        <div className="col-span-full text-center text-white/30 font-bold py-20 uppercase tracking-widest">No results found for "{searchPageQuery}"</div>
+                                    )}
+                                    {searchPageQuery.length > 0 && items.map(item => (
+                                        <KnowledgeCard key={item._id} item={item} onDelete={handleDelete} onRevisit={handleRevisit} getRelativeTime={getRelativeTime} />
+                                    ))}
+                                    {searchPageQuery.length === 0 && (
+                                        <div className="col-span-full h-48 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[48px] flex items-center justify-center text-white/20 font-black tracking-widest uppercase">
+                                            Start typing to search your entire knowledge base
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+
+                         {/* Phase 4: Full Page Collections like Cortex Image 4 */}
+                         {activeView === 'collections' && (
+                            <motion.div key="collections" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-16">
+                                <div className="flex items-center justify-between pb-8 border-b border-white/5">
+                                    <h1 className="text-5xl font-black tracking-tighter text-white">Collections</h1>
+                                    <button 
+                                        onClick={() => {
+                                            const name = window.prompt("Enter new collection name:");
+                                            if(name) setCollections(prev => [...new Set([name, ...prev])]);
+                                        }}
+                                        className="px-8 py-5 bg-orange-500 text-white rounded-[24px] font-black text-[12px] uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center gap-3 shadow-xl"
+                                    >
+                                        <FolderPlus size={16} /> New Collection
+                                    </button>
+                                </div>
+                                
+                                {collections.length === 0 ? (
+                                    <div className="col-span-full h-96 flex flex-col items-center justify-center bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[64px] text-center space-y-6 max-w-5xl mx-auto px-10 py-20">
+                                        <div className="p-6 bg-white/5 rounded-[32px]"><Folder size={32} className="text-white/20" /></div>
+                                        <div>
+                                            <h3 className="text-3xl font-black tracking-tighter text-white mb-4">No collections yet</h3>
+                                            <p className="text-[12px] uppercase tracking-widest text-white/30 font-bold max-w-sm mx-auto leading-relaxed">
+                                                Start organizing your links and notes in custom folders
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                        {collections.map((col, idx) => {
+                                            const colItems = items.filter(it => it.collectionName === col);
+                                            return (
+                                                <div key={idx} className="p-8 bg-[#1A1A1A] border border-white/5 rounded-[32px] relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-2xl cursor-pointer">
+                                                    <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-orange-500/10 blur-[40px] rounded-full pointer-events-none group-hover:bg-orange-500/20 transition-all" />
+                                                    <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 text-orange-500 group-hover:scale-110 transition-transform">
+                                                        <Folder size={20} className={colItems.length > 0 ? "fill-current" : ""} />
+                                                    </div>
+                                                    <h3 className="text-2xl font-black text-white mb-2">{col || "General"}</h3>
+                                                    <p className="text-xs font-bold text-white/40 uppercase tracking-widest">{colItems.length} Saved Items</p>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {activeView === 'graph' && (
+                            <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12 h-screen">
+                                <div className="flex items-center justify-between border-b border-white/5 pb-8">
+                                    <h1 className="text-5xl font-black text-white tracking-tighter">Dot Graph</h1>
+                                    <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-2 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/40">
+                                        <div 
+                                            onClick={() => setGraphLabelsOn(!graphLabelsOn)} 
+                                            className={`flex items-center gap-2 px-4 py-2 cursor-pointer transition-all rounded-xl ${graphLabelsOn ? 'bg-white/10 text-white shadow-lg' : 'hover:text-white'}`}
+                                        >
+                                            <div className={`w-2 h-2 rounded-full ${graphLabelsOn ? 'bg-orange-500' : 'bg-gray-500'}`}></div> Labels: {graphLabelsOn ? 'ON' : 'OFF'}
+                                        </div>
+                                        <div 
+                                            onClick={() => setGraphInteractiveOn(!graphInteractiveOn)} 
+                                            className={`flex items-center gap-2 px-4 py-2 cursor-pointer transition-all rounded-xl ${graphInteractiveOn ? 'bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] text-white' : 'hover:text-white'}`}
+                                        >
+                                            <div className={`w-2 h-2 rounded-full ${graphInteractiveOn ? 'bg-white' : 'bg-gray-500'}`}></div> Interactive: {graphInteractiveOn ? 'ON' : 'OFF'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="h-[calc(100vh-220px)] bg-[#0F0F0F] rounded-[48px] border border-white/5 relative overflow-hidden shadow-2xl">
+                                    <KnowledgeGraph items={items} labelsOn={graphLabelsOn} interactiveOn={graphInteractiveOn} />
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeView === 'highlights' && (
+                            <motion.div key="highlights" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12">
+                                <div className="flex flex-col gap-2">
+                                    <h1 className="text-5xl font-black text-white tracking-tighter">Highlights</h1>
+                                    <p className="text-white/40 font-bold uppercase tracking-[4px] text-[10px]">The most important bits from your saved items</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {items.filter(item => (item.highlights && item.highlights.length > 0) || item.summary || item.content).map((item, i) => {
+                                        const highlightText = (item.highlights && item.highlights.length > 0) ? item.highlights[0] : (item.summary || (item.content ? item.content.substring(0, 150) + "..." : "No text found."));
+                                        const colors = ['border-orange-500/30', 'border-blue-500/30', 'border-emerald-500/30', 'border-purple-500/30', 'border-pink-500/30'];
+                                        const borderColor = colors[i % colors.length];
+                                        
+                                        return (
+                                            <div key={i} className={`group p-8 flex flex-col justify-between gap-6 bg-[#111111] border ${borderColor} rounded-[32px] hover:bg-white/5 transition-all duration-500 shadow-xl relative overflow-hidden h-fit`}>
+                                                <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/5 blur-[30px] rounded-full pointer-events-none group-hover:bg-orange-500/10 transition-all" />
+                                                
+                                                <p className="text-lg font-medium leading-relaxed italic text-white/90 font-serif tracking-normal opacity-90 group-hover:opacity-100 transition-opacity">
+                                                    "{highlightText}"
+                                                </p>
+                                                
+                                                <div className="flex items-center gap-3 pt-6 border-t border-white/5 mt-auto">
+                                                    <div className={`w-2 h-2 rounded-full bg-current ${borderColor.replace('border-', 'text-').replace('/30', '')}`} />
+                                                    <p className="text-[10px] uppercase tracking-widest font-black text-white/40 group-hover:text-white/60 transition-colors line-clamp-1">{item.title}</p>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    {items.length === 0 && (
+                                        <div className="col-span-full h-48 bg-white/[0.02] border border-dashed border-white/10 rounded-[48px] flex items-center justify-center text-white/20 font-black tracking-widest uppercase mt-10">
+                                            No knowledge saved yet. Go save something!
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+
+                    </AnimatePresence>
                 </div>
             </div>
-
-          </main>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Home;

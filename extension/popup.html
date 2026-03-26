@@ -1,17 +1,176 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
-        body { width: 300px; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0A192F; color: white; }
-        h1 { font-size: 1.2rem; margin-bottom: 20px; text-align: center; }
-        #save-btn { width: 100%; padding: 10px; background: #64FFDA; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
-        #save-btn:hover { background: #52D1B2; }
-    </style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
+    
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 0;
+      background: #050505;
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      overflow: hidden;
+    }
+
+    .container {
+      padding: 24px;
+      position: relative;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .icon {
+      width: 32px;
+      height: 32px;
+      background: #f59e0b;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 900;
+      margin: 0;
+      font-style: italic;
+      letter-spacing: -1px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.3);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .preview-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px border rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+
+    .preview-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-url {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px;
+      color: white;
+      font-family: inherit;
+      box-sizing: border-box;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    input:focus {
+      border-color: #f59e0b50;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    button {
+      width: 100%;
+      background: white;
+      color: black;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-weight: 900;
+      font-size: 12px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:hover {
+      background: #f59e0b;
+      color: white;
+      transform: scale(1.02);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .status {
+      font-size: 10px;
+      text-align: center;
+      margin-top: 12px;
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    .success {
+      color: #10b981 !important;
+    }
+  </style>
 </head>
 <body>
-    <h1>Commit to Dea</h1>
-    <p>Organize this page instantly.</p>
-    <button id="save-btn">SAVE NOW</button>
-    <script src="popup.js"></script>
+  <div class="container">
+    <div class="header">
+      <div class="icon">✨</div>
+      <h1>Burfi Mirror</h1>
+    </div>
+
+    <div class="preview-card">
+      <div id="title" class="preview-title">Detecting Page...</div>
+      <div id="url" class="preview-url">Searching Neural Link...</div>
+    </div>
+
+    <div class="input-group">
+      <label>Neural Tags (Optional)</label>
+      <input type="text" id="tags" placeholder="e.g. AI, React, Startups">
+    </div>
+
+    <div class="input-group">
+      <label>Quick Note</label>
+      <input type="text" id="content" placeholder="Why save this?">
+    </div>
+
+    <button id="saveBtn">
+      <span>MIRROR TO BRAIN</span>
+    </button>
+
+    <div id="status" class="status">Neural link ready.</div>
+  </div>
+  <script src="popup.js"></script>
 </body>
 </html>

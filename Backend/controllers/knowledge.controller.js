@@ -2,8 +2,6 @@ import Knowledge from "../models/knowledge.js"
 import { processKnowledge } from "../utils/ai.js"
 import { scrapeUrl } from "../utils/scraper.js"
 
-/*// DELETE /api/v1/knowledge/:id
-// Description: Remove a specific knowledge item */
 export const deleteKnowledge = async (req, res) => {
   try {
     const { id } = req.params;
@@ -14,8 +12,6 @@ export const deleteKnowledge = async (req, res) => {
   }
 };
 
-/*// POST /api/v1/knowledge/scrape?url=...
-// Description: Automatically extract info from a URL before saving */
 export const fetchUrlMetadata = async (req, res) => {
   try {
     const { url } = req.query;
@@ -28,13 +24,10 @@ export const fetchUrlMetadata = async (req, res) => {
   }
 };
 
-/*// POST /api/v1/knowledge/save
-// Description: Save with AI-powered tagging and embedding storage */
 export const saveKnowledge = async (req, res) => {
   try {
-    const { title, url, content, type, tags: providedTags, user } = req.body;
+    const { title, url, content, type, tags: providedTags, collectionName, user } = req.body;
 
-    // Use URL scraper if title/content is missing
     let finalTitle = title;
     let finalContent = content;
 
@@ -44,26 +37,27 @@ export const saveKnowledge = async (req, res) => {
         finalContent = finalContent || metadata.content || "No detailed content found";
     }
 
-    // 1. AI Processing (Extracting tags and generating embeddings automatically)
-    const { tags: aiTags, embedding, summary } = await processKnowledge(finalContent || finalTitle, providedTags || []);
+    const { tags: aiTags, embedding, summary, highlights } = await processKnowledge(finalContent || finalTitle, providedTags || []);
+
+    const isVideo = url.includes('youtube.com') || url.includes('youtu.be');
+    const finalType = type || (isVideo ? 'video' : 'article');
 
     const knowledge = await Knowledge.create({
       title: finalTitle,
       url,
       content: finalContent,
-      type: type || "article",
-      tags: [...new Set([...(providedTags || []), ...aiTags])],
+      type: finalType,
+      collectionName: collectionName || "Uncategorized",
+      tags: [...new Set([...(providedTags || []), ...(aiTags || [])])],
       embedding,
+      summary,
+      highlights: highlights || [],
       user
     });
 
     res.status(201).json({
       success: true,
-      message: "Knowledge organized successfully!",
-      data: {
-        ...knowledge._doc,
-        aiSummary: summary
-      }
+      data: knowledge
     });
 
   } catch (error) {
@@ -74,8 +68,6 @@ export const saveKnowledge = async (req, res) => {
   }
 };
 
-/*// GET /api/v1/knowledge
-// Description: Get all saved knowledge items */
 export const getallknowledge = async (req, res) => {
   try {
     const knowledge = await Knowledge.find().sort({ createdAt: -1 });
@@ -84,21 +76,15 @@ export const getallknowledge = async (req, res) => {
       data: knowledge
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/* GET /api/v1/knowledge/search?q=query
-// Description: Semantic or keyword search */
 export const searchKnowledge = async (req, res) => {
   try {
     const { q } = req.query;
     if(!q) return res.status(200).json({ success: true, data: [] });
 
-    // Simple Keyword Search for now (Regex)
     const results = await Knowledge.find({
       $or: [
         { title: { $regex: q, $options: "i" } },
@@ -107,42 +93,44 @@ export const searchKnowledge = async (req, res) => {
       ]
     }).limit(20);
 
-    res.status(200).json({
-      success: true,
-      data: results
-    });
-
+    res.status(200).json({ success: true, data: results });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/* GET /api/v1/knowledge/resurface
-// Description: Get memories from exactly X time ago (Recalling information) */
 export const resurfaceMemories = async (req, res) => {
   try {
-    // Logic for resurfacing: fetch items from months ago
-    const targetDate = new Date();
-    targetDate.setMonth(targetDate.getMonth() - 2); // 2 months ago (as per request)
-
-    const memories = await Knowledge.find({
-      createdAt: { 
-        $gte: new Date(targetDate.getTime() - 2 * 24 * 60 * 60 * 1000), // Within a 2-day window 2 months ago
-        $lte: new Date(targetDate.getTime() + 2 * 24 * 60 * 60 * 1000) 
-      }
-    }).limit(5);
+    // Only fetch memories that have explicitly been pinned by the user
+    const memories = await Knowledge.find({ revisit: true }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       data: memories
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const toggleRevisit = async (req, res) => {
+    try {
+        const item = await Knowledge.findById(req.params.id);
+        item.revisit = !item.revisit;
+        await item.save();
+        res.status(200).json({ success: true, data: item });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const getCollections = async (req, res) => {
+    try {
+        const collections = await Knowledge.distinct('collectionName');
+        const defaultCollections = ["Uncategorized", "General", "Frontend", "UI"]
+        const allCollections = [...new Set([...collections, ...defaultCollections])]
+        res.status(200).json({ success: true, data: allCollections });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
