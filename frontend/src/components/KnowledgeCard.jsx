@@ -34,7 +34,7 @@ const KnowledgeCard = ({ item, onDelete, onRevisit, getRelativeTime, isPinnedFee
             className="bg-[#1A1A1A] border border-white/10 group p-0 rounded-[32px] transition-all duration-500 relative flex flex-col h-full overflow-hidden hover:border-orange-500/30 shadow-2xl cursor-pointer"
             onClick={() => window.open(item.url, '_blank')}
         >
-            <div className="w-full h-32 overflow-hidden relative group-hover:h-36 transition-all duration-700">
+            <div className="w-full h-28 md:h-32 overflow-hidden relative group-hover:h-36 transition-all duration-700">
                 {displayImage ? (
                     <>
                         <img src={displayImage} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 font-sans" />

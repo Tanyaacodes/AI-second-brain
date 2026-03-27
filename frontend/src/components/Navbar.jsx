@@ -22,17 +22,17 @@ const Navbar = ({ activeView, setActiveView, onLogout, currentUser }) => {
     };
 
     return (
-        <header className="w-full h-20 bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between px-8 z-50 sticky top-0 shadow-2xl backdrop-blur-md">
+        <header className="w-full h-16 md:h-20 bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between px-4 md:px-8 z-50 sticky top-0 shadow-2xl backdrop-blur-md">
             
             {/* Logo */}
-            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView('dashboard')}>
-                <div className="p-2.5 bg-orange-500 rounded-xl shadow-xl shadow-orange-500/20 group-hover:scale-110 transition-transform duration-500">
-                    <Sparkles size={20} className="text-white fill-current" />
+            <div className="flex items-center gap-2 md:gap-3 cursor-pointer group shrink-0" onClick={() => setActiveView('dashboard')}>
+                <div className="p-2 md:p-2.5 bg-orange-500 rounded-xl shadow-xl shadow-orange-500/20 group-hover:scale-110 transition-transform duration-500">
+                    <Sparkles size={18} className="text-white fill-current" />
                 </div>
-                <span className="text-2xl font-black text-white tracking-tighter">Burfi</span>
+                <span className="text-xl md:text-2xl font-black text-white tracking-tighter">Burfi</span>
             </div>
 
-            {/* Top Navigation */}
+            {/* Top Navigation (Desktop) */}
             <nav className="hidden lg:flex items-center gap-2">
                 {navItems.map((item) => (
                     <button
@@ -58,17 +58,17 @@ const Navbar = ({ activeView, setActiveView, onLogout, currentUser }) => {
             </nav>
 
             {/* User Profile */}
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/10 rounded-full hover:border-orange-500/30 transition-all cursor-pointer">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white shadow-lg overflow-hidden border-2 border-orange-500/30">
+            <div className="flex items-center gap-2 md:gap-4 shrink-0">
+                <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 bg-white/5 border border-white/10 rounded-full hover:border-orange-500/30 transition-all cursor-pointer">
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white shadow-lg overflow-hidden border-2 border-orange-500/30">
                         {currentUser?.avatar 
                             ? <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
-                            : <User size={14} />
+                            : <User size={12} />
                         }
                     </div>
-                    <div className="flex flex-col hidden sm:flex">
-                        <span className="text-xs font-black text-white leading-none">{currentUser?.name || 'User'}</span>
-                        <span className="text-[9px] uppercase font-bold text-white/40 tracking-widest mt-1">Free Plan</span>
+                    <div className="flex flex-col hidden xs:flex">
+                        <span className="text-[10px] md:text-xs font-black text-white leading-none whitespace-nowrap">{currentUser?.name?.split(' ')[0] || 'User'}</span>
+                        <span className="text-[8px] md:text-[9px] uppercase font-bold text-white/40 tracking-widest mt-1 text-orange-500">Free</span>
                     </div>
                 </div>
                 <button 
@@ -76,7 +76,7 @@ const Navbar = ({ activeView, setActiveView, onLogout, currentUser }) => {
                     title="Sign Out"
                     className="text-white/20 hover:text-red-400 transition-colors p-2"
                 >
-                    <LogOut size={18} />
+                    <LogOut size={16} />
                 </button>
             </div>
 

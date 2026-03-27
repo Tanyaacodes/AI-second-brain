@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Mail, Lock, User, Eye, EyeOff, ArrowRight, Chrome } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 
-const AUTH_BASE = `${import.meta.env.VITE_API_URL}/auth`;
+
 
 // Google OAuth — opens Google popup and returns user info via @react-oauth/google
 // We use the simple client-side token decode approach for simplicity
@@ -26,7 +26,7 @@ const AuthPage = ({ onLogin }) => {
                 ? { email: form.email, password: form.password }
                 : { name: form.name, email: form.email, password: form.password };
 
-            const res = await axios.post(`${AUTH_BASE}${endpoint}`, payload);
+            const res = await api.post(`/auth${endpoint}`, payload);
             localStorage.setItem('burfi_token', res.data.token);
             localStorage.setItem('burfi_user', JSON.stringify(res.data.user));
             onLogin(res.data.user);
@@ -67,7 +67,7 @@ const AuthPage = ({ onLogin }) => {
                         email: payload.email,
                         avatar: payload.picture,
                     };
-                    const res = await axios.post(`${AUTH_BASE}/google`, googleUser);
+                    const res = await api.post(`/auth/google`, googleUser);
                     localStorage.setItem('burfi_token', res.data.token);
                     localStorage.setItem('burfi_user', JSON.stringify(res.data.user));
                     onLogin(res.data.user);

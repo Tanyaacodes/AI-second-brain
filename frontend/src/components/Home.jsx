@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import Navbar from './Navbar';
@@ -10,13 +10,14 @@ import KnowledgeGraph from './KnowledgeGraph';
 
 import { Search, Globe, Filter, FolderPlus, Folder } from 'lucide-react';
 
-const API_BASE = `${import.meta.env.VITE_API_URL}/v1/knowledge`;
+const API_BASE = `/v1/knowledge`;
 
 const getRelativeTime = (date) => {
     const diffInDays = Math.floor((new Date() - new Date(date)) / (1000 * 60 * 60 * 24));
     if (diffInDays === 0) return "Today";
     if (diffInDays === 1) return "Yesterday";
     if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
     return `${Math.floor(diffInDays / 30)} months ago`;
 };
 
@@ -27,6 +28,7 @@ const Home = ({ currentUser, onLogout }) => {
     const [activeView, setActiveView] = useState("dashboard");
     const [activeFilter, setActiveFilter] = useState("all");
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     
     // Graph view states
     const [graphLabelsOn, setGraphLabelsOn] = useState(false);
@@ -42,21 +44,21 @@ const Home = ({ currentUser, onLogout }) => {
 
     const fetchItems = async () => {
         try {
-            const res = await axios.get(API_BASE);
+            const res = await api.get(API_BASE);
             setItems(res.data.data);
         } catch (err) { console.error("Fetch Error:", err); }
     };
 
     const fetchResurface = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/resurface`);
+            const res = await api.get(`${API_BASE}/resurface`);
             setMemories(res.data.data);
         } catch (err) { console.error("Memory Error:", err); }
     };
 
     const fetchCollections = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/collections`);
+            const res = await api.get(`${API_BASE}/collections`);
             setCollections(res.data.data);
         } catch (err) { 
             console.error("Collections Error:", err); 
@@ -75,7 +77,7 @@ const Home = ({ currentUser, onLogout }) => {
         const normalizedQuery = val.trim().toLowerCase();
         if (normalizedQuery.length > 0) {
             try {
-                const res = await axios.get(`${API_BASE}/search?q=${encodeURIComponent(normalizedQuery)}`);
+                const res = await api.get(`${API_BASE}/search?q=${encodeURIComponent(normalizedQuery)}`);
                 setItems(res.data.data);
             } catch (err) { console.error("Search Error:", err); }
         } else {
@@ -99,7 +101,7 @@ const Home = ({ currentUser, onLogout }) => {
             scrapeTimeoutRef.current = setTimeout(async () => {
                 setIsScraping(true);
                 try {
-                    const res = await axios.get(`${API_BASE}/scrape?url=${encodeURIComponent(inputUrl)}`);
+                    const res = await api.get(`${API_BASE}/scrape?url=${encodeURIComponent(inputUrl)}`);
                     if (res.data.success && (res.data.data.title || res.data.data.content)) {
                         setNewSave(prev => ({ 
                             ...prev, 
@@ -113,11 +115,38 @@ const Home = ({ currentUser, onLogout }) => {
         }
     };
 
+    const handleFileUpload = async (file) => {
+        if (!file) return;
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await api.post(`${API_BASE}/upload`, formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            if (res.data.success) {
+                setNewSave({
+                    title: res.data.data.title,
+                    url: res.data.data.url,
+                    content: res.data.data.content,
+                    type: res.data.data.type,
+                    tags: res.data.data.tags.join(", "),
+                    collectionName: res.data.data.collectionName
+                });
+            }
+        } catch (err) {
+            console.error("Upload Error:", err);
+        } finally {
+            setIsUploading(false);
+        }
+    }
+
     const handleSave = async () => {
         if (!newSave.url) return;
         setIsSaving(true);
         try {
-            await axios.post(`${API_BASE}/save`, newSave);
+            await api.post(`${API_BASE}/save`, newSave);
             setNewSave({ title: "", url: "", content: "", type: "article", tags: "", collectionName: "" });
             fetchItems();
             fetchResurface();
@@ -128,18 +157,35 @@ const Home = ({ currentUser, onLogout }) => {
     };
 
     const handleRevisit = async (id) => {
+        // Optimistic update for both main list and "revisit" memories
         setItems(prev => prev.map(it => it._id === id ? {...it, revisit: !it.revisit} : it));
+        setMemories(prev => {
+            const isCurrentlyPinned = prev.some(it => it._id === id);
+            if (isCurrentlyPinned) {
+                // Was pinned -> now unpinning -> remove from memories
+                return prev.filter(it => it._id !== id);
+            } else {
+                // Was NOT pinned -> now pinning -> find in main items and add to front
+                const item = items.find(it => it._id === id);
+                return item ? [{ ...item, revisit: true }, ...prev] : prev;
+            }
+        });
+
         try {
-            await axios.put(`${API_BASE}/${id}/revisit`);
+            await api.put(`${API_BASE}/${id}/revisit`);
+            // Server will re-sort and finalize state
             fetchResurface();
             fetchItems();
-        } catch (err) { fetchItems(); }
+        } catch (err) { 
+            fetchItems();
+            fetchResurface();
+        }
     };
 
     const handleDelete = async (id) => {
         if (window.confirm("Purge memory?")) {
             setItems(prev => prev.filter(it => it._id !== id));
-            try { await axios.delete(`${API_BASE}/${id}`); } catch (err) { fetchItems(); }
+            try { await api.delete(`${API_BASE}/${id}`); } catch (err) { fetchItems(); }
         }
     };
 
@@ -161,6 +207,8 @@ const Home = ({ currentUser, onLogout }) => {
         handleSave={handleSave}
         isSaving={isSaving}
         isScraping={isScraping}
+        isUploading={isUploading}
+        handleFileUpload={handleFileUpload}
     />;
 
     return (
@@ -170,7 +218,7 @@ const Home = ({ currentUser, onLogout }) => {
             <div className="flex-1 flex flex-col relative z-20 overflow-hidden">
 
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar pt-10 px-10 pb-20">
+                <div className="flex-1 overflow-y-auto custom-scrollbar-none pt-6 md:pt-10 px-4 md:px-10 pb-32">
                     <AnimatePresence mode="wait">
                         
                         {/* Phase 2: Refined Dashboard */}
@@ -225,8 +273,8 @@ const Home = ({ currentUser, onLogout }) => {
                         
                         {/* Phase 4: Full Page Search like Cortex Image 3 */}
                         {activeView === 'search' && (
-                            <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col justify-start items-center pt-20 overflow-y-auto">
-                                <h1 className="text-[64px] font-black text-white tracking-tighter mb-12">Search Your Memory</h1>
+                            <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col justify-start items-center pt-10 custom-scrollbar-none overflow-y-auto">
+                                <h1 className="text-[54px] font-black text-white tracking-tighter mb-8 transition-all">Search Your Memory</h1>
                                 <div className="w-full max-w-4xl relative">
                                     <Search size={24} className="absolute left-8 top-1/2 -translate-y-1/2 text-white/30" />
                                     <input 
@@ -240,12 +288,12 @@ const Home = ({ currentUser, onLogout }) => {
                                     />
                                     <button 
                                         onClick={() => performSearch(searchPageQuery)}
-                                        className="absolute right-6 top-1/2 -translate-y-1/2 bg-orange-500 text-white px-8 py-4 rounded-[32px] font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-white hover:text-black transition-all border-2 border-transparent hover:border-orange-500"
+                                        className="absolute right-6 top-1/2 -translate-y-1/2 bg-orange-500 text-white px-5 py-2.5 rounded-[24px] font-black uppercase tracking-widest text-[9px] shadow-xl hover:bg-white hover:text-black transition-all border-2 border-transparent hover:border-orange-500"
                                     >
                                         Search Burfi
                                     </button>
                                 </div>
-                                <div className="mt-20 w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
+                                <div className="mt-10 w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
                                     {searchPageQuery.length > 0 && items.length === 0 && (
                                         <div className="col-span-full text-center text-white/30 font-bold py-20 uppercase tracking-widest">No results found for "{searchPageQuery}"</div>
                                     )}
@@ -253,7 +301,7 @@ const Home = ({ currentUser, onLogout }) => {
                                         <KnowledgeCard key={item._id} item={item} onDelete={handleDelete} onRevisit={handleRevisit} getRelativeTime={getRelativeTime} />
                                     ))}
                                     {searchPageQuery.length === 0 && (
-                                        <div className="col-span-full h-48 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[48px] flex items-center justify-center text-white/20 font-black tracking-widest uppercase">
+                                        <div className="col-span-full h-48 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[48px] flex items-center justify-center text-white/20 font-black tracking-widest uppercase mt-10">
                                             Start typing to search your entire knowledge base
                                         </div>
                                     )}
@@ -308,7 +356,7 @@ const Home = ({ currentUser, onLogout }) => {
                         )}
 
                         {activeView === 'graph' && (
-                            <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12 h-screen">
+                            <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12 h-full">
                                 <div className="flex items-center justify-between border-b border-white/5 pb-8">
                                     <h1 className="text-5xl font-black text-white tracking-tighter">Dot Graph</h1>
                                     <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-2 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/40">
@@ -326,7 +374,7 @@ const Home = ({ currentUser, onLogout }) => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="h-[calc(100vh-220px)] bg-[#0F0F0F] rounded-[48px] border border-white/5 relative overflow-hidden shadow-2xl">
+                                <div className="h-[calc(100vh-270px)] bg-[#0F0F0F] rounded-[48px] border border-white/5 relative overflow-hidden shadow-2xl">
                                     <KnowledgeGraph items={items} labelsOn={graphLabelsOn} interactiveOn={graphInteractiveOn} />
                                 </div>
                             </motion.div>
@@ -338,17 +386,17 @@ const Home = ({ currentUser, onLogout }) => {
                                     <h1 className="text-5xl font-black text-white tracking-tighter">Highlights</h1>
                                     <p className="text-white/40 font-bold uppercase tracking-[4px] text-[10px]">The most important bits from your saved items</p>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
                                     {items.filter(item => (item.highlights && item.highlights.length > 0) || item.summary || item.content).map((item, i) => {
                                         const highlightText = (item.highlights && item.highlights.length > 0) ? item.highlights[0] : (item.summary || (item.content ? item.content.substring(0, 150) + "..." : "No text found."));
                                         const colors = ['border-orange-500/30', 'border-blue-500/30', 'border-emerald-500/30', 'border-purple-500/30', 'border-pink-500/30'];
                                         const borderColor = colors[i % colors.length];
                                         
                                         return (
-                                            <div key={i} className={`group p-8 flex flex-col justify-between gap-6 bg-[#111111] border ${borderColor} rounded-[32px] hover:bg-white/5 transition-all duration-500 shadow-xl relative overflow-hidden h-fit`}>
+                                            <div key={i} className={`group p-8 flex flex-col justify-between gap-6 bg-[#111111] border ${borderColor} rounded-[32px] hover:bg-white/5 transition-all duration-500 shadow-xl relative overflow-hidden h-full`}>
                                                 <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/5 blur-[30px] rounded-full pointer-events-none group-hover:bg-orange-500/10 transition-all" />
                                                 
-                                                <p className="text-lg font-medium leading-relaxed italic text-white/90 font-serif tracking-normal opacity-90 group-hover:opacity-100 transition-opacity">
+                                                <p className="text-lg font-medium leading-relaxed italic text-white/90 font-serif tracking-normal opacity-90 group-hover:opacity-100 transition-opacity line-clamp-6">
                                                     "{highlightText}"
                                                 </p>
                                                 
@@ -370,6 +418,33 @@ const Home = ({ currentUser, onLogout }) => {
 
                     </AnimatePresence>
                 </div>
+            </div>
+            {/* MOBILE BOTTOM NAVIGATION */}
+            <div className="lg:hidden fixed bottom-0 left-0 w-full bg-[#0A0A0A]/90 backdrop-blur-3xl border-t border-white/5 p-2 px-4 flex items-center justify-around z-[100] pb-6">
+                {[
+                    { id: 'dashboard', label: 'Dash' },
+                    { id: 'archive', label: 'Lib' },
+                    { id: 'search', label: 'Search' },
+                    { id: 'graph', label: 'Graph' },
+                    { id: 'highlights', label: 'High' }
+                ].map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => setActiveView(item.id)}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 ${
+                            activeView === item.id ? 'text-orange-500' : 'text-white/40'
+                        }`}
+                    >
+                        <div className={`transition-transform duration-300 ${activeView === item.id ? 'scale-110' : ''}`}>
+                            {item.id === 'search' && <Search size={20} />}
+                            {item.id === 'dashboard' && <div className={`w-5 h-5 border-2 ${activeView === item.id ? 'border-orange-500' : 'border-white/20'} rounded-sm flex items-center justify-center`}><div className="w-2 h-2 bg-current rounded-full" /></div>}
+                            {item.id === 'archive' && <div className={`w-5 h-5 border-2 ${activeView === item.id ? 'border-orange-500' : 'border-white/20'} rounded-full`} />}
+                            {item.id === 'graph' && <div className={`w-5 h-5 border-2 ${activeView === item.id ? 'border-orange-500' : 'border-white/20'} rotate-45 flex items-center justify-center`}><div className="w-1 h-3 bg-current rounded-full" /></div>}
+                            {item.id === 'highlights' && <div className={`w-3 h-5 border-l-4 ${activeView === item.id ? 'border-orange-500' : 'border-white/20'} italic text-2xl leading-none font-serif`}>"</div>}
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+                    </button>
+                ))}
             </div>
         </div>
     );

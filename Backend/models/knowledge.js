@@ -20,6 +20,9 @@ const knowledgeSchema = new mongoose.Schema({
   source: {
     type: String
   },
+  image: {
+    type: String
+  },
   tags: [{
     type: String
   }],

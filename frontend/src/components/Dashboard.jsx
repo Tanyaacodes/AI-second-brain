@@ -38,8 +38,8 @@ const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setA
                     </div>
                 </div>
 
-                {/* RIGHT: Vertical Stats */}
-                <div className="lg:w-60 xl:w-64 flex flex-col gap-3 shrink-0 mt-12">
+                {/* RIGHT: Vertical Stats (Mobile: 2x2 Grid, Desktop: Column) */}
+                <div className="w-full lg:w-60 xl:w-64 grid grid-cols-2 lg:flex lg:flex-col gap-3 shrink-0 mt-6 lg:mt-12">
                     {stats.map((stat, i) => (
                         <div key={i} className="bg-white/5 border border-white/10 px-5 py-4 rounded-[24px] flex items-center gap-5 shadow-lg relative overflow-hidden group hover:border-orange-500/30 transition-all">
                             <div className={`p-3 bg-white/5 rounded-xl ${stat.color} group-hover:scale-110 transition-transform shrink-0`}>
