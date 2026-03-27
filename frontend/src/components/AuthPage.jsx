@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Mail, Lock, User, Eye, EyeOff, ArrowRight, Chrome } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import api from '../api';
 
 
 
-// Google OAuth — opens Google popup and returns user info via @react-oauth/google
 // We use the simple client-side token decode approach for simplicity
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const AuthPage = ({ onLogin }) => {
     const [mode, setMode] = useState('login'); // 'login' | 'register'
@@ -36,51 +34,6 @@ const AuthPage = ({ onLogin }) => {
         setLoading(false);
     };
 
-    const handleGoogleLogin = () => {
-        // Load Google Identity Services script dynamically
-        if (!window.google) {
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.onload = () => initGoogleSignIn();
-            document.head.appendChild(script);
-        } else {
-            initGoogleSignIn();
-        }
-    };
-
-    const initGoogleSignIn = () => {
-        if (!GOOGLE_CLIENT_ID) {
-            setError('Google Sign-In is not configured. Add VITE_GOOGLE_CLIENT_ID to your .env file.');
-            return;
-        }
-
-        // Initialize only if not already done
-        window.google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: async (response) => {
-                try {
-                    setLoading(true);
-                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                    const googleUser = {
-                        googleId: payload.sub,
-                        name: payload.name,
-                        email: payload.email,
-                        avatar: payload.picture,
-                    };
-                    const res = await api.post(`/auth/google`, googleUser);
-                    localStorage.setItem('burfi_token', res.data.token);
-                    localStorage.setItem('burfi_user', JSON.stringify(res.data.user));
-                    onLogin(res.data.user);
-                } catch (err) {
-                    setError('Google Sign-In failed. Please try again.');
-                }
-                setLoading(false);
-            }
-        });
-        
-        // Show the prompt immediately after initialization
-        window.google.accounts.id.prompt();
-    };
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4 relative overflow-hidden">
@@ -118,20 +71,6 @@ const AuthPage = ({ onLogin }) => {
                         ))}
                     </div>
 
-                    {/* Google Button */}
-                    <button
-                        onClick={handleGoogleLogin}
-                        className="w-full flex items-center justify-center gap-3 py-3.5 bg-white text-black rounded-2xl font-black text-sm hover:bg-orange-50 transition-all mb-6 shadow-lg"
-                    >
-                        <Chrome size={18} className="text-blue-500" />
-                        Continue with Google
-                    </button>
-
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="flex-1 h-px bg-white/10" />
-                        <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">or</span>
-                        <div className="flex-1 h-px bg-white/10" />
-                    </div>
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-4">

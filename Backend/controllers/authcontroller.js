@@ -37,28 +37,6 @@ export const loginUser = async (req, res) => {
     }
 }
 
-// Google OAuth — called after Google redirects back with user info passed as JSON body
-export const googleAuth = async (req, res) => {
-    try {
-        const { googleId, name, email, avatar } = req.body
-        let user = await User.findOne({ email })
-
-        if (!user) {
-            // New user — create from Google data
-            user = await User.create({ name, email, googleId, avatar })
-        } else if (!user.googleId) {
-            // Existing email user — link Google
-            user.googleId = googleId
-            user.avatar = avatar
-            await user.save()
-        }
-
-        const token = signToken(user._id)
-        res.json({ message: "Google login success", token, user: { id: user._id, name: user.name, email: user.email, avatar: user.avatar } })
-    } catch (error) {
-        res.status(500).json({ message: error.message })
-    }
-}
 
 export const getMe = async (req, res) => {
     try {
