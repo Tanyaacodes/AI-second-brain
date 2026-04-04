@@ -312,13 +312,84 @@ export const uploadFileKnowledge = async (req, res) => {
     }
 }
 
+import User from "../models/user.js"
+
 export const getCollections = async (req, res) => {
     try {
-        const collections = await Knowledge.distinct('collectionName', { user: req.user._id });
+        // Collect names from items
+        const itemCollections = await Knowledge.distinct('collectionName', { user: req.user._id });
+        
+        // Collect custom names from user (for empty folders)
+        const user = await User.findById(req.user._id);
+        const userCollections = user?.customCollections || [];
+
         const defaultCollections = ["Uncategorized", "General", "Frontend", "UI"]
-        const allCollections = [...new Set([...collections, ...defaultCollections])]
+        const allCollections = [...new Set([...itemCollections, ...userCollections, ...defaultCollections])]
+        
         res.status(200).json({ success: true, data: allCollections });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const createCollection = async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) return res.status(400).json({ success: false, message: "Name required" });
+
+        await User.findByIdAndUpdate(req.user._id, {
+            $addToSet: { customCollections: name }
+        });
+
+        res.status(200).json({ success: true, message: "Collection placeholder created." });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const renameCollection = async (req, res) => {
+    try {
+        const { oldName, newName } = req.body;
+        if (!oldName || !newName) return res.status(400).json({ success: false, message: "Names required" });
+
+        // Update items
+        await Knowledge.updateMany(
+            { user: req.user._id, collectionName: oldName },
+            { $set: { collectionName: newName } }
+        );
+
+        // Update user custom collections
+        await User.findByIdAndUpdate(req.user._id, {
+            $pull: { customCollections: oldName }
+        });
+        await User.findByIdAndUpdate(req.user._id, {
+            $addToSet: { customCollections: newName }
+        });
+
+        res.status(200).json({ success: true, message: "Collection renamed." });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const deleteCollection = async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) return res.status(400).json({ success: false, message: "Collection name required" });
+
+        // Reset items
+        await Knowledge.updateMany(
+            { user: req.user._id, collectionName: name },
+            { $set: { collectionName: "Uncategorized" } }
+        );
+
+        // Remove from user
+        await User.findByIdAndUpdate(req.user._id, {
+            $pull: { customCollections: name }
+        });
+
+        res.status(200).json({ success: true, message: "Collection purged." });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}

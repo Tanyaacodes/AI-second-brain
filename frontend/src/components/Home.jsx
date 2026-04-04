@@ -8,9 +8,9 @@ import Clipper from './Clipper';
 import KnowledgeCard from './KnowledgeCard';
 import KnowledgeGraph from './KnowledgeGraph';
 
-import { Search, Globe, Filter, FolderPlus, Folder } from 'lucide-react';
+import { Search, Globe, Filter, FolderPlus, Folder, Quote, ExternalLink, Play, Sparkles } from 'lucide-react';
 
-const API_BASE = `/v1/knowledge`;
+const API_BASE = `v1/knowledge`;
 
 const getRelativeTime = (date) => {
     const diffInDays = Math.floor((new Date() - new Date(date)) / (1000 * 60 * 60 * 24));
@@ -21,7 +21,7 @@ const getRelativeTime = (date) => {
     return `${Math.floor(diffInDays / 30)} months ago`;
 };
 
-const Home = ({ currentUser, onLogout }) => {
+const Home = ({ currentUser, onLogout, onLogin }) => {
     const [items, setItems] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchPageQuery, setSearchPageQuery] = useState("");
@@ -45,32 +45,59 @@ const Home = ({ currentUser, onLogout }) => {
     const fetchItems = async () => {
         try {
             const res = await api.get(API_BASE);
-            setItems(res.data.data);
+            setItems(res.data.data || []);
         } catch (err) { console.error("Fetch Error:", err); }
     };
 
     const fetchResurface = async () => {
         try {
             const res = await api.get(`${API_BASE}/resurface`);
-            setMemories(res.data.data);
+            setMemories(res.data.data || []);
         } catch (err) { console.error("Memory Error:", err); }
     };
+
+    const [selectedCollection, setSelectedCollection] = useState(null);
 
     const fetchCollections = async () => {
         try {
             const res = await api.get(`${API_BASE}/collections`);
-            setCollections(res.data.data);
+            setCollections(res.data.data || []);
         } catch (err) { 
             console.error("Collections Error:", err); 
             setCollections(["Uncategorized", "General", "Frontend", "UI"]);
         }
     };
 
+    const handleRenameCollection = async (oldName, newName) => {
+        try {
+            await api.put(`${API_BASE}/collections/rename`, { oldName, newName });
+            setCollections(prev => prev.map(c => c === oldName ? newName : c));
+            setItems(prev => prev.map(it => it.collectionName === oldName ? { ...it, collectionName: newName } : it));
+            if (selectedCollection === oldName) setSelectedCollection(newName);
+        } catch (err) {
+            console.error("Rename error:", err);
+            fetchCollections();
+        }
+    }
+
+    const handleDeleteCollection = async (name) => {
+        try {
+            await api.delete(`${API_BASE}/collections`, { data: { name } });
+            setCollections(prev => prev.filter(c => c !== name));
+            setItems(prev => prev.map(it => it.collectionName === name ? { ...it, collectionName: "Uncategorized" } : it));
+            if (selectedCollection === name) setSelectedCollection(null);
+        } catch (err) {
+            console.error("Delete collection error:", err);
+            fetchCollections();
+        }
+    }
+
     useEffect(() => {
         fetchItems();
         fetchResurface();
         fetchCollections();
-    }, []);
+        setSelectedCollection(null); // Reset detail view when switching main tabs
+    }, [activeView]);
 
     const performSearch = async (val) => {
         setSearchQuery(val);
@@ -78,7 +105,7 @@ const Home = ({ currentUser, onLogout }) => {
         if (normalizedQuery.length > 0) {
             try {
                 const res = await api.get(`${API_BASE}/search?q=${encodeURIComponent(normalizedQuery)}`);
-                setItems(res.data.data);
+                setItems(res.data.data || []);
             } catch (err) { console.error("Search Error:", err); }
         } else {
             fetchItems();
@@ -189,7 +216,7 @@ const Home = ({ currentUser, onLogout }) => {
         }
     };
 
-    const filteredItems = items.filter(item => {
+    const filteredItems = (items || []).filter(item => {
         if (activeFilter === 'all') return true;
         const isYT = item.url?.includes('youtube.com') || item.url?.includes('youtu.be');
         
@@ -213,7 +240,13 @@ const Home = ({ currentUser, onLogout }) => {
 
     return (
         <div className="flex flex-col h-screen bg-[#0A0A0A] text-[#F9FAFB] font-sans overflow-hidden">
-            <Navbar activeView={activeView} setActiveView={setActiveView} currentUser={currentUser} onLogout={onLogout} />
+            <Navbar 
+                activeView={activeView} 
+                setActiveView={setActiveView} 
+                currentUser={currentUser} 
+                onLogout={onLogout} 
+                onLogin={onLogin} 
+            />
 
             <div className="flex-1 flex flex-col relative z-20 overflow-hidden">
 
@@ -241,7 +274,7 @@ const Home = ({ currentUser, onLogout }) => {
                         {activeView === 'archive' && (
                             <motion.div key="archive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-5xl font-black tracking-tighter text-white">Your Library</h2>
+                                    <h2 className="text-5xl font-black tracking-tighter text-white font-cursive">Your Library</h2>
                                     <button className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black tracking-widest uppercase hover:bg-orange-500 hover:text-white transition-all shadow-xl flex items-center gap-2">
                                         <Filter size={14} /> Sort & Filter
                                     </button>
@@ -273,13 +306,27 @@ const Home = ({ currentUser, onLogout }) => {
                         
                         {/* Phase 4: Full Page Search like Cortex Image 3 */}
                         {activeView === 'search' && (
-                            <motion.div key="search" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col justify-start items-center pt-10 custom-scrollbar-none overflow-y-auto">
-                                <h1 className="text-[54px] font-black text-white tracking-tighter mb-8 transition-all">Search Your Memory</h1>
-                                <div className="w-full max-w-4xl relative">
-                                    <Search size={24} className="absolute left-8 top-1/2 -translate-y-1/2 text-white/30" />
+                            <motion.div 
+                                key="search" 
+                                initial={{ opacity: 0 }} 
+                                animate={{ opacity: 1 }} 
+                                exit={{ opacity: 0 }} 
+                                className="flex flex-col items-center pt-8 md:pt-16 max-w-7xl mx-auto w-full px-4"
+                            >
+                                {/* Professional Glow Effect */}
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-500/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+
+                                <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-12 flex items-center gap-4 font-cursive">
+                                    <Search size={40} className="text-orange-500" strokeWidth={3} />
+                                    Search Memory
+                                </h1>
+                                
+                                <div className="w-full max-w-3xl relative group">
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-orange-600/20 to-orange-400/20 rounded-[48px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+                                    <Search size={22} className="absolute left-8 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500/50 transition-colors" />
                                     <input 
-                                         className="w-full bg-white/[0.03] border border-white/[0.08] p-8 pl-20 pr-48 rounded-[48px] text-2xl font-black text-white outline-none focus:border-orange-500/50 focus:bg-white/5 transition-all shadow-2xl"
-                                         placeholder="Search for... 'design patterns'..."
+                                         className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] p-7 pl-18 pr-44 rounded-[36px] text-xl font-bold text-white outline-none focus:border-orange-500/40 focus:bg-white/[0.05] transition-all shadow-2xl placeholder:text-white/10"
+                                         placeholder="Search items, tags, contents..."
                                          value={searchPageQuery}
                                          onChange={(e) => {
                                             setSearchPageQuery(e.target.value);
@@ -288,21 +335,31 @@ const Home = ({ currentUser, onLogout }) => {
                                     />
                                     <button 
                                         onClick={() => performSearch(searchPageQuery)}
-                                        className="absolute right-6 top-1/2 -translate-y-1/2 bg-orange-500 text-white px-5 py-2.5 rounded-[24px] font-black uppercase tracking-widest text-[9px] shadow-xl hover:bg-white hover:text-black transition-all border-2 border-transparent hover:border-orange-500"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-orange-500 text-white px-8 py-3.5 rounded-[24px] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-orange-500/20 hover:bg-white hover:text-black transition-all border-2 border-transparent"
                                     >
-                                        Search Burfi
+                                        Search
                                     </button>
                                 </div>
-                                <div className="mt-10 w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
+
+                                <div className="mt-20 w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
                                     {searchPageQuery.length > 0 && items.length === 0 && (
-                                        <div className="col-span-full text-center text-white/30 font-bold py-20 uppercase tracking-widest">No results found for "{searchPageQuery}"</div>
+                                        <div className="col-span-full text-center py-20">
+                                            <div className="inline-flex flex-col items-center gap-4 text-white/20">
+                                                <Search size={48} strokeWidth={1} />
+                                                <p className="text-sm font-black uppercase tracking-[4px]">No matches found for "{searchPageQuery}"</p>
+                                            </div>
+                                        </div>
                                     )}
                                     {searchPageQuery.length > 0 && items.map(item => (
                                         <KnowledgeCard key={item._id} item={item} onDelete={handleDelete} onRevisit={handleRevisit} getRelativeTime={getRelativeTime} />
                                     ))}
                                     {searchPageQuery.length === 0 && (
-                                        <div className="col-span-full h-48 bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[48px] flex items-center justify-center text-white/20 font-black tracking-widest uppercase mt-10">
-                                            Start typing to search your entire knowledge base
+                                        <div className="col-span-full h-80 flex flex-col items-center justify-center bg-white/[0.01] border-2 border-dashed border-white/5 rounded-[48px] text-center px-10 transition-colors hover:bg-white/[0.02]">
+                                            <div className="p-5 bg-white/5 rounded-3xl mb-6">
+                                                <Globe size={32} className="text-white/10" />
+                                            </div>
+                                            <h3 className="text-xl font-black tracking-tight text-white/40 mb-2 uppercase">Ready to Explore</h3>
+                                            <p className="text-xs font-bold text-white/10 uppercase tracking-widest max-w-xs">Enter a keyword above to scan your entire knowledge base</p>
                                         </div>
                                     )}
                                 </div>
@@ -312,53 +369,123 @@ const Home = ({ currentUser, onLogout }) => {
                          {/* Phase 4: Full Page Collections like Cortex Image 4 */}
                          {activeView === 'collections' && (
                             <motion.div key="collections" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-16">
-                                <div className="flex items-center justify-between pb-8 border-b border-white/5">
-                                    <h1 className="text-5xl font-black tracking-tighter text-white">Collections</h1>
-                                    <button 
-                                        onClick={() => {
-                                            const name = window.prompt("Enter new collection name:");
-                                            if(name) setCollections(prev => [...new Set([name, ...prev])]);
-                                        }}
-                                        className="px-8 py-5 bg-orange-500 text-white rounded-[24px] font-black text-[12px] uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center gap-3 shadow-xl"
-                                    >
-                                        <FolderPlus size={16} /> New Collection
-                                    </button>
-                                </div>
-                                
-                                {collections.length === 0 ? (
-                                    <div className="col-span-full h-96 flex flex-col items-center justify-center bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[64px] text-center space-y-6 max-w-5xl mx-auto px-10 py-20">
-                                        <div className="p-6 bg-white/5 rounded-[32px]"><Folder size={32} className="text-white/20" /></div>
-                                        <div>
-                                            <h3 className="text-3xl font-black tracking-tighter text-white mb-4">No collections yet</h3>
-                                            <p className="text-[12px] uppercase tracking-widest text-white/30 font-bold max-w-sm mx-auto leading-relaxed">
-                                                Start organizing your links and notes in custom folders
-                                            </p>
+                                {!selectedCollection ? (
+                                    <>
+                                        <div className="flex items-center justify-between pb-8 border-b border-white/5">
+                                            <h1 className="text-5xl font-black tracking-tighter text-white font-cursive">Collections</h1>
+                                            <button 
+                                                onClick={async () => {
+                                                    const name = window.prompt("Enter new collection name:");
+                                                    if(name) {
+                                                        try {
+                                                            await api.post(`${API_BASE}/collections`, { name });
+                                                            setCollections(prev => [...new Set([name, ...prev])]);
+                                                        } catch (err) {
+                                                            console.error("Failed to create collection placeholder:", err);
+                                                        }
+                                                    }
+                                                }}
+                                                className="px-8 py-5 bg-orange-500 text-white rounded-[24px] font-black text-[12px] uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center gap-3 shadow-xl"
+                                            >
+                                                <FolderPlus size={16} /> New Collection
+                                            </button>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                        {collections.map((col, idx) => {
-                                            const colItems = items.filter(it => it.collectionName === col);
-                                            return (
-                                                <div key={idx} className="p-8 bg-[#1A1A1A] border border-white/5 rounded-[32px] relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-2xl cursor-pointer">
-                                                    <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-orange-500/10 blur-[40px] rounded-full pointer-events-none group-hover:bg-orange-500/20 transition-all" />
-                                                    <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 text-orange-500 group-hover:scale-110 transition-transform">
-                                                        <Folder size={20} className={colItems.length > 0 ? "fill-current" : ""} />
-                                                    </div>
-                                                    <h3 className="text-2xl font-black text-white mb-2">{col || "General"}</h3>
-                                                    <p className="text-xs font-bold text-white/40 uppercase tracking-widest">{colItems.length} Saved Items</p>
+                                        
+                                        {collections.length === 0 ? (
+                                            <div className="col-span-full h-96 flex flex-col items-center justify-center bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[64px] text-center space-y-6 max-w-5xl mx-auto px-10 py-20">
+                                                <div className="p-6 bg-white/5 rounded-[32px]"><Folder size={32} className="text-white/20" /></div>
+                                                <div>
+                                                    <h3 className="text-3xl font-black tracking-tighter text-white mb-4">No collections yet</h3>
+                                                    <p className="text-[12px] uppercase tracking-widest text-white/30 font-bold max-w-sm mx-auto leading-relaxed">
+                                                        Start organizing your links and notes in custom folders
+                                                    </p>
                                                 </div>
-                                            )
-                                        })}
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                                {collections.map((col, idx) => {
+                                                    const colItems = (items || []).filter(it => it.collectionName === (col || "Uncategorized"));
+                                                    return (
+                                                        <div 
+                                                            key={idx} 
+                                                            onClick={() => setSelectedCollection(col)}
+                                                            className="p-8 bg-[#1A1A1A] border border-white/5 rounded-[32px] relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-2xl cursor-pointer"
+                                                        >
+                                                            <div className="absolute top-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const newName = window.prompt("Rename collection:", col);
+                                                                        if (newName && newName !== col) {
+                                                                            handleRenameCollection(col, newName);
+                                                                        }
+                                                                    }}
+                                                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-all"
+                                                                >
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                                </button>
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if(window.confirm(`Delete ${col}? Items will be moved to Uncategorized.`)) {
+                                                                            handleDeleteCollection(col);
+                                                                        }
+                                                                    }}
+                                                                    className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-500 transition-all"
+                                                                >
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                </button>
+                                                            </div>
+                                                            <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-orange-500/10 blur-[40px] rounded-full pointer-events-none group-hover:bg-orange-500/20 transition-all" />
+                                                            <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 text-orange-500 group-hover:scale-110 transition-transform">
+                                                                <Folder size={20} className={colItems.length > 0 ? "fill-current" : ""} />
+                                                            </div>
+                                                            <h3 className="text-2xl font-black text-white mb-2">{col || "General"}</h3>
+                                                            <p className="text-xs font-bold text-white/40 uppercase tracking-widest">{colItems.length} Saved Items</p>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="space-y-10">
+                                        <div className="flex items-center gap-6">
+                                            <button 
+                                                onClick={() => setSelectedCollection(null)}
+                                                className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white hover:bg-white hover:text-black transition-all"
+                                            >
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                                            </button>
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <Folder size={20} className="text-orange-500 fill-current" />
+                                                    <span className="text-xs font-black uppercase tracking-widest text-white/40">Collection</span>
+                                                </div>
+                                                <h1 className="text-5xl font-black tracking-tighter text-white font-cursive">{selectedCollection}</h1>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                            {items.filter(it => it.collectionName === selectedCollection).length === 0 ? (
+                                                <div className="col-span-full py-20 text-center text-white/20 font-black uppercase tracking-widest border-2 border-dashed border-white/5 rounded-[48px]">
+                                                    This collection is empty.
+                                                </div>
+                                            ) : (
+                                                items.filter(it => it.collectionName === selectedCollection).map(item => (
+                                                    <KnowledgeCard key={item._id} item={item} onDelete={handleDelete} onRevisit={handleRevisit} getRelativeTime={getRelativeTime} />
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </motion.div>
-                        )}
+                         )}
 
                         {activeView === 'graph' && (
                             <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12 h-full">
                                 <div className="flex items-center justify-between border-b border-white/5 pb-8">
-                                    <h1 className="text-5xl font-black text-white tracking-tighter">Dot Graph</h1>
+                                    <h1 className="text-5xl font-black text-white tracking-tighter font-cursive">Dot Graph</h1>
                                     <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-2 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/40">
                                         <div 
                                             onClick={() => setGraphLabelsOn(!graphLabelsOn)} 
@@ -381,38 +508,131 @@ const Home = ({ currentUser, onLogout }) => {
                         )}
 
                         {activeView === 'highlights' && (
-                            <motion.div key="highlights" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12">
-                                <div className="flex flex-col gap-2">
-                                    <h1 className="text-5xl font-black text-white tracking-tighter">Highlights</h1>
-                                    <p className="text-white/40 font-bold uppercase tracking-[4px] text-[10px]">The most important bits from your saved items</p>
+                            <motion.div 
+                                key="highlights" 
+                                initial={{ opacity: 0 }} 
+                                animate={{ opacity: 1 }} 
+                                exit={{ opacity: 0 }} 
+                                className="space-y-20 max-w-7xl mx-auto w-full px-4 mb-32"
+                            >
+                                <div className="flex flex-col gap-6 text-center pt-10">
+                                    <motion.h1 
+                                        initial={{ y: 20, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase font-cursive"
+                                    >
+                                        Memory <span className="text-orange-500">Gold</span>
+                                    </motion.h1>
+                                    <motion.p 
+                                        initial={{ y: 20, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="text-white/30 font-bold uppercase tracking-[10px] text-[10px] max-w-xl mx-auto leading-relaxed"
+                                    >
+                                        Insights, quotes, and pivotal thoughts automatically surfaced from your curated library.
+                                    </motion.p>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+                                
+                                <div className="columns-1 md:columns-2 lg:columns-3 gap-10 space-y-10">
                                     {items.filter(item => (item.highlights && item.highlights.length > 0) || item.summary || item.content).map((item, i) => {
-                                        const highlightText = (item.highlights && item.highlights.length > 0) ? item.highlights[0] : (item.summary || (item.content ? item.content.substring(0, 150) + "..." : "No text found."));
-                                        const colors = ['border-orange-500/30', 'border-blue-500/30', 'border-emerald-500/30', 'border-purple-500/30', 'border-pink-500/30'];
-                                        const borderColor = colors[i % colors.length];
+                                        const highlightList = (item.highlights && item.highlights.length > 0) 
+                                            ? item.highlights 
+                                            : [item.summary || (item.content ? item.content.substring(0, 180) + "..." : "")]
                                         
+                                        const isYT = item.url?.includes('youtube.com') || item.url?.includes('youtu.be');
+                                        const typeId = isYT ? 'video' : (item.type || 'article');
+                                        
+                                        const colors = {
+                                            video: 'from-red-600/20 to-transparent',
+                                            tweet: 'from-blue-500/20 to-transparent',
+                                            pdf: 'from-orange-500/20 to-transparent',
+                                            article: 'from-emerald-500/20 to-transparent',
+                                            note: 'from-purple-500/20 to-transparent'
+                                        };
+                                        
+                                        const borderColors = {
+                                            video: 'border-red-500/30',
+                                            tweet: 'border-blue-500/30',
+                                            pdf: 'border-orange-500/30',
+                                            article: 'border-emerald-500/30',
+                                            note: 'border-purple-500/30'
+                                        };
+
                                         return (
-                                            <div key={i} className={`group p-8 flex flex-col justify-between gap-6 bg-[#111111] border ${borderColor} rounded-[32px] hover:bg-white/5 transition-all duration-500 shadow-xl relative overflow-hidden h-full`}>
-                                                <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/5 blur-[30px] rounded-full pointer-events-none group-hover:bg-orange-500/10 transition-all" />
+                                            <motion.div 
+                                                key={i} 
+                                                initial={{ opacity: 0, y: 30 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={{ once: true }}
+                                                transition={{ delay: i * 0.1 }}
+                                                whileHover={{ y: -8 }}
+                                                className={`break-inside-avoid p-10 flex flex-col gap-8 bg-[#111111] border ${borderColors[typeId] || 'border-white/5'} rounded-[48px] transition-all duration-500 shadow-3xl group relative overflow-hidden`}
+                                            >
+                                                {/* Decorative Quote Mark */}
+                                                <Quote size={120} className="absolute -top-6 -left-6 text-white/[0.03] rotate-12 pointer-events-none group-hover:text-orange-500/5 transition-colors" />
                                                 
-                                                <p className="text-lg font-medium leading-relaxed italic text-white/90 font-serif tracking-normal opacity-90 group-hover:opacity-100 transition-opacity line-clamp-6">
-                                                    "{highlightText}"
-                                                </p>
+                                                {/* Branding Accent */}
+                                                <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${colors[typeId] || 'from-white/10 to-transparent'} blur-[60px] pointer-events-none opacity-50 group-hover:opacity-80 transition-opacity`} />
                                                 
-                                                <div className="flex items-center gap-3 pt-6 border-t border-white/5 mt-auto">
-                                                    <div className={`w-2 h-2 rounded-full bg-current ${borderColor.replace('border-', 'text-').replace('/30', '')}`} />
-                                                    <p className="text-[10px] uppercase tracking-widest font-black text-white/40 group-hover:text-white/60 transition-colors line-clamp-1">{item.title}</p>
+                                                <div className="flex items-center justify-between relative z-10">
+                                                     <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10">
+                                                        <span className={isYT ? 'text-red-500' : 'text-orange-500'}>
+                                                            {isYT ? <Play size={14} fill="currentColor" /> : <Sparkles size={14} />}
+                                                        </span>
+                                                        <span className="text-[10px] font-black uppercase tracking-[3px] text-white/60">{isYT ? 'Video Insight' : `${item.type || 'Concept'} Highlight`}</span>
+                                                     </div>
+                                                     <button 
+                                                        onClick={() => window.open(item.url, '_blank')}
+                                                        className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-orange-500 hover:text-white rounded-2xl transition-all"
+                                                     >
+                                                        <ExternalLink size={16} />
+                                                     </button>
                                                 </div>
-                                            </div>
+
+                                                <div className="space-y-8 relative z-10">
+                                                    {highlightList.map((text, idx) => (
+                                                        <div key={idx} className="relative pl-6">
+                                                            <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-full ${isYT ? 'bg-red-500/40' : 'bg-orange-500/40'}`} />
+                                                            <p className="text-xl md:text-2xl font-medium leading-relaxed italic text-white/90 font-serif tracking-tight group-hover:text-white transition-colors">
+                                                                "{text}"
+                                                            </p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-5 pt-8 border-t border-white/5 mt-2 relative z-10">
+                                                    <div className="w-12 h-12 rounded-[18px] bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-xl ring-2 ring-transparent group-hover:ring-orange-500/20 transition-all">
+                                                        {item.image ? (
+                                                            <img src={item.image} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                        ) : (
+                                                            <div className={`w-3 h-3 rounded-full ${isYT ? 'bg-red-500' : 'bg-orange-500'} animate-pulse`} />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5 overflow-hidden">
+                                                        <p className="text-xs font-black uppercase tracking-wider text-white line-clamp-1 group-hover:text-orange-500 transition-colors uppercase">{item.title}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-4 h-[1px] bg-white/20" />
+                                                            <p className="text-[9px] font-bold uppercase tracking-[3px] text-white/30 truncate">{item.source || 'Knowledge Mine'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
                                         )
                                     })}
-                                    {items.length === 0 && (
-                                        <div className="col-span-full h-48 bg-white/[0.02] border border-dashed border-white/10 rounded-[48px] flex items-center justify-center text-white/20 font-black tracking-widest uppercase mt-10">
-                                            No knowledge saved yet. Go save something!
-                                        </div>
-                                    )}
                                 </div>
+                                
+                                {items.length === 0 && (
+                                    <div className="flex flex-col items-center py-40 gap-10 opacity-30 text-center">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 bg-orange-500 blur-[80px] opacity-20" />
+                                            <div className="p-10 bg-white/5 rounded-[40px] border border-white/10 relative z-10"><Sparkles size={64} className="text-orange-500" /></div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <p className="text-[14px] uppercase font-black tracking-[12px] text-white">The Mine is Empty</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-[4px] text-white/50">Save some items to start extracting gold.</p>
+                                        </div>
+                                    </div>
+                                )}
                             </motion.div>
                         )}
 

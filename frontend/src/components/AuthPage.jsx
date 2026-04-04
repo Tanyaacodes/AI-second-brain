@@ -7,7 +7,7 @@ import api from '../api';
 
 // We use the simple client-side token decode approach for simplicity
 
-const AuthPage = ({ onLogin }) => {
+const AuthPage = ({ onLogin, onBack }) => {
     const [mode, setMode] = useState('login'); // 'login' | 'register'
     const [form, setForm] = useState({ name: '', email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -52,7 +52,7 @@ const AuthPage = ({ onLogin }) => {
                     <div className="p-3 bg-orange-500 rounded-2xl shadow-xl shadow-orange-500/30">
                         <Sparkles size={24} className="text-white fill-current" />
                     </div>
-                    <span className="text-4xl font-black text-white tracking-tighter">Burfi</span>
+                    <span className="text-4xl font-black text-white tracking-tighter font-cursive">Burfi</span>
                 </div>
 
                 {/* Card */}
@@ -144,9 +144,17 @@ const AuthPage = ({ onLogin }) => {
                     </form>
                 </div>
 
-                <p className="text-center text-white/20 text-[10px] font-black uppercase tracking-widest mt-6">
-                    Your second brain. Privately yours.
-                </p>
+                <div className="flex flex-col items-center gap-6 mt-8">
+                    <button 
+                        onClick={onBack}
+                        className="text-white/20 hover:text-white text-[10px] uppercase font-black tracking-[4px] transition-all"
+                    >
+                        ← Back to Home
+                    </button>
+                    <p className="text-center text-white/20 text-[10px] font-black uppercase tracking-widest">
+                        Your second brain. Privately yours.
+                    </p>
+                </div>
             </motion.div>
         </div>
     );

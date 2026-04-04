@@ -5,8 +5,42 @@ import { cloudinary } from '../config/cloudinary.js';
 
 export const scrapeUrl = async (url) => {
   try {
+    const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+    const isTwitter = url.includes('twitter.com') || url.includes('x.com');
     const isPDF = url.toLowerCase().endsWith('.pdf');
     const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
+
+    // --- Special YouTube Scraper ---
+    if (isYouTube) {
+        try {
+            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+            const { data } = await axios.get(oembedUrl);
+            return {
+                title: data.title || "YouTube Video",
+                content: `Video by ${data.author_name} (YouTube)`,
+                source: "youtube.com",
+                image: data.thumbnail_url || ""
+            };
+        } catch (err) {
+            console.error("YouTube oEmbed failed:", err.message);
+        }
+    }
+
+    // --- Special Twitter/X Scraper ---
+    if (isTwitter) {
+        try {
+            const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`;
+            const { data } = await axios.get(oembedUrl);
+            return {
+                title: data.author_name ? `Tweet by ${data.author_name}` : "Tweet",
+                content: data.html ? data.html.replace(/<[^>]*>/g, '').substring(0, 200) : "Social post content",
+                source: "twitter.com",
+                image: "" // Twitter oembed doesn't always provide image easily
+            };
+        } catch (err) {
+            console.error("Twitter oEmbed failed:", err.message);
+        }
+    }
 
     if (isPDF) {
         try {

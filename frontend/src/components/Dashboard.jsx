@@ -8,10 +8,10 @@ import KnowledgeCard from './KnowledgeCard';
 
 const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setActiveView, ClipperComponent, currentUser }) => {
     const stats = [
-        { label: "Total Items", value: items.length || 0, icon: Database, color: "text-purple-400" },
-        { label: "Links", value: items.filter(i => (i.type === 'link' || i.type === 'article') && !(i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: LinkIcon, color: "text-blue-400" },
-        { label: "Videos", value: items.filter(i => i.type === 'video' || (i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: Share2, color: "text-red-400" },
-        { label: "Notes", value: items.filter(i => i.type === 'note').length || 0, icon: FileText, color: "text-green-400" },
+        { label: "Total Items", value: (items || []).length || 0, icon: Database, color: "text-purple-400" },
+        { label: "Links", value: (items || []).filter(i => (i.type === 'link' || i.type === 'article') && !(i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: LinkIcon, color: "text-blue-400" },
+        { label: "Videos", value: (items || []).filter(i => i.type === 'video' || (i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: Share2, color: "text-red-400" },
+        { label: "Notes", value: (items || []).filter(i => i.type === 'note').length || 0, icon: FileText, color: "text-green-400" },
     ];
 
     return (
@@ -25,7 +25,7 @@ const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setA
                 <div className="text-white/40 text-[10px] font-black uppercase tracking-[4px]">
                     {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
-                <h1 className="text-5xl font-black text-white tracking-tighter">Welcome, {currentUser?.name?.split(' ')[0] || 'User'}</h1>
+                <h1 className="text-5xl font-black text-white tracking-tighter font-cursive">Welcome, {currentUser?.name?.split(' ')[0] || 'User'}</h1>
             </div>
 
             {/* Two-column: Clipper LEFT, Vertical Stats RIGHT */}
@@ -58,7 +58,7 @@ const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setA
             </div>
 
             {/* Resurfaced Today feed exactly as in Cortex */}
-            {memories.length > 0 && (
+            { (memories || []).length > 0 && (
                 <div className="space-y-10 px-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -89,7 +89,7 @@ const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setA
                  </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {items.slice(0, 8).map(item => (
+                    {(items || []).slice(0, 8).map(item => (
                         <KnowledgeCard key={item._id} item={item} onDelete={onDelete} onRevisit={onRevisit} getRelativeTime={getRelativeTime} />
                     ))}
                 </div>

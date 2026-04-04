@@ -1,5 +1,18 @@
 import express from "express"
-import { saveKnowledge, getallknowledge, searchKnowledge, resurfaceMemories, fetchUrlMetadata, deleteKnowledge, toggleRevisit, getCollections, uploadFileKnowledge } from "../controllers/knowledge.controller.js"
+import { 
+    saveKnowledge, 
+    getallknowledge, 
+    searchKnowledge, 
+    resurfaceMemories, 
+    fetchUrlMetadata, 
+    deleteKnowledge, 
+    toggleRevisit, 
+    getCollections, 
+    uploadFileKnowledge,
+    renameCollection,
+    deleteCollection,
+    createCollection
+} from "../controllers/knowledge.controller.js"
 import { protect, optionalProtect } from "../middleware/authMiddleware.js"
 import { storage } from "../config/cloudinary.js"
 import multer from "multer"
@@ -16,5 +29,9 @@ router.get("/scrape", optionalProtect, fetchUrlMetadata)
 router.delete("/:id", protect, deleteKnowledge)
 router.put("/:id/revisit", protect, toggleRevisit)
 router.get("/collections", protect, getCollections)
+router.post("/collections", protect, createCollection)
+router.put("/collections/rename", protect, renameCollection)
+router.delete("/collections", protect, deleteCollection)
+
 
 export default router

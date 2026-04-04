@@ -3,8 +3,11 @@
   "name": "Burfi Mirror",
   "version": "1.0",
   "description": "Save everything to your Burfi Second Brain instantly.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus", "notifications"],
   "host_permissions": ["http://localhost:5000/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -13,6 +16,22 @@
       "128": "icon.png"
     }
   },
+  "commands": {
+    "toggle-burfi-jar": {
+      "suggested_key": {
+        "default": "Alt+B",
+        "mac": "Command+Shift+B"
+      },
+      "description": "Toggle the Burfi Jar Clipper"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
   "icons": {
     "16": "icon.png",
     "48": "icon.png",

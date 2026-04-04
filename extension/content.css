@@ -1,0 +1,125 @@
+#burfi-jar-floating {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: #f59e0b;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+    z-index: 2147483647;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 24px;
+    user-select: none;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+#burfi-jar-floating:hover {
+    transform: scale(1.1) rotate(10deg);
+}
+
+#burfi-sidebar {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: 100vh;
+    background: #050505;
+    z-index: 2147483646;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    transition: right 0.4s cubic-bezier(0.85, 0, 0.15, 1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-family: 'Outfit', sans-serif !important;
+    display: flex;
+    flex-direction: column;
+}
+
+#burfi-sidebar.open {
+    right: 0;
+}
+
+.burfi-sidebar-header {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.burfi-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.burfi-drop-zone {
+    border: 2px dashed rgba(245, 158, 11, 0.3);
+    border-radius: 20px;
+    padding: 40px 20px;
+    text-align: center;
+    background: rgba(245, 158, 11, 0.05);
+    transition: all 0.3s;
+    margin-bottom: 24px;
+}
+
+.burfi-drop-zone.dragover {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: #f59e0b;
+    transform: scale(1.02);
+}
+
+.burfi-jar-title {
+    font-size: 20px;
+    font-weight: 900;
+    font-style: italic;
+    color: #f59e0b;
+}
+
+.burfi-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    color: white;
+    margin-top: 12px;
+    outline: none;
+}
+
+.burfi-btn {
+    width: 100%;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-weight: 900;
+    margin-top: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.burfi-btn:hover {
+    background: #d97706;
+}
+
+#burfi-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 2147483645;
+    display: none;
+}
+
+#burfi-overlay.open {
+    display: block;
+}

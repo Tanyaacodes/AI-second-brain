@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Home from './components/Home';
 import AuthPage from './components/AuthPage';
+import LandingPage from './components/LandingPage';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     // Restore session from localStorage
@@ -21,16 +23,28 @@ function App() {
     setAuthChecked(true);
   }, []);
 
-  const handleLogin = (user) => setCurrentUser(user);
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setShowAuth(false);
+  };
+  
   const handleLogout = () => setCurrentUser(null);
 
   if (!authChecked) return null; // prevent flash
 
+  if (currentUser) {
+    return (
+      <div className="App">
+        <Home currentUser={currentUser} onLogout={handleLogout} onLogin={handleLogin} />
+      </div>
+    );
+  }
+
   return (
     <div className="App">
-      {currentUser
-        ? <Home currentUser={currentUser} onLogout={handleLogout} />
-        : <AuthPage onLogin={handleLogin} />
+      {showAuth 
+        ? <AuthPage onLogin={handleLogin} onBack={() => setShowAuth(false)} />
+        : <LandingPage onGetStarted={() => setShowAuth(true)} />
       }
     </div>
   );

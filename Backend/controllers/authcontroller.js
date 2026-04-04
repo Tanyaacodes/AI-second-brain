@@ -50,3 +50,17 @@ export const getMe = async (req, res) => {
         res.status(401).json({ message: "Invalid token" })
     }
 }
+
+export const updateProfile = async (req, res) => {
+    try {
+        const { name } = req.body;
+        let updateData = { name };
+        if (req.file) {
+            updateData.avatar = req.file.path;
+        }
+        const user = await User.findByIdAndUpdate(req.user._id, updateData, { new: true }).select("-password");
+        res.json({ user: { id: user._id, name: user.name, email: user.email, avatar: user.avatar } });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
