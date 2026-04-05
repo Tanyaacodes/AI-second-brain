@@ -54,39 +54,36 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
       const animate = () => {
         try {
           const graph = forceRef.current;
-          // CRITICAL: Type check prevents the "2nd time" crash
-          if (analyserRef.current && graph && typeof graph.d3Simulation === 'function') {
+          // CRITICAL: Updated physics logic for force-graph
+          if (analyserRef.current && graph && typeof graph.d3ReheatSimulation === 'function') {
             const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
             analyserRef.current.getByteFrequencyData(dataArray);
             const average = dataArray.reduce((p, c) => p + c, 0) / dataArray.length;
 
             beatIntensityRef.current = average / 25;
 
-            // REVEALING THE "USER FAVORITE" MOVEMENT
-            const simulation = graph.d3Simulation();
-            if (simulation) {
-              simulation.alphaTarget(0.8).restart(); // Keeps physics "hot"
+            // Keeps physics "hot" so the random velocity pushes actually register
+            graph.d3ReheatSimulation();
 
-              const nodes = simulation.nodes();
-              nodes.forEach(node => {
-                // High-energy vibration and spin from the first version
-                const multiplier = average / 4;
-                node.vx += (Math.random() - 0.5) * multiplier;
-                node.vy += (Math.random() - 0.5) * multiplier;
+            const nodes = graph.graphData().nodes;
+            nodes.forEach(node => {
+              // High-energy vibration and spin based on the music intensity
+              const multiplier = average / 2;
+              node.vx = (node.vx || 0) + (Math.random() - 0.5) * multiplier;
+              node.vy = (node.vy || 0) + (Math.random() - 0.5) * multiplier;
 
-                // Extra jitter for visual "spin" sensation
-                if (average > 30) {
-                  node.x += (Math.random() - 0.5) * (average / 12);
-                  node.y += (Math.random() - 0.5) * (average / 12);
-                }
-              });
-            }
+              // Extra physical jitter for visual "dance" sensation during highs
+              if (average > 30) {
+                node.x = (node.x || 0) + (Math.random() - 0.5) * (average / 8);
+                node.y = (node.y || 0) + (Math.random() - 0.5) * (average / 8);
+              }
+            });
 
             if (graph.d3Force && graph.d3Force('charge')) {
               graph.d3Force('charge').strength(-350 - (average * 50));
             }
           }
-        } catch (e) { }
+        } catch (e) { console.error("Dance error:", e); }
         animationRef.current = requestAnimationFrame(animate);
       };
       animate();
@@ -95,13 +92,13 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
       if (audioRef.current) {
         audioRef.current.pause();
         const graph = forceRef.current;
-        if (graph && typeof graph.d3Simulation === 'function') {
-          const sim = graph.d3Simulation();
-          if (sim) sim.alphaTarget(0).alpha(0.1).restart();
+        if (graph && typeof graph.d3ReheatSimulation === 'function') {
+          // Immediately chill the simulation down
           if (graph.d3Force && graph.d3Force('charge')) {
-            graph.d3Force('charge').strength(-250);
+            graph.d3Force('charge').strength(-300);
           }
         }
+
       }
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     }
