@@ -12,7 +12,7 @@ const LandingPage = ({ onGetStarted }) => {
     const featuresRef = useRef(null);
     const mechanismRef = useRef(null);
     const faqRef = useRef(null);
-    
+
     const [openFaq, setOpenFaq] = useState(null);
 
     const scrollToSection = (ref) => {
@@ -34,12 +34,12 @@ const LandingPage = ({ onGetStarted }) => {
                     </div>
                     <div className="space-y-2 opacity-50">
                         <div className="flex items-center gap-2">
-                             <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                             <div className="h-1.5 w-32 bg-white/5 rounded" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                            <div className="h-1.5 w-32 bg-white/5 rounded" />
                         </div>
                         <div className="flex items-center gap-2">
-                             <div className="w-1.5 h-1.5 rounded-full bg-orange-500/30" />
-                             <div className="h-1.5 w-24 bg-white/5 rounded" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500/30" />
+                            <div className="h-1.5 w-24 bg-white/5 rounded" />
                         </div>
                     </div>
                     <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-orange-500/5 blur-2xl rounded-full" />
@@ -63,7 +63,7 @@ const LandingPage = ({ onGetStarted }) => {
                         </div>
                     </div>
                     <div className="w-1/3 bg-orange-500/10 rounded-xl flex items-center justify-center border border-orange-500/20">
-                         <Sparkles size={20} className="text-orange-500 animate-pulse" />
+                        <Sparkles size={20} className="text-orange-500 animate-pulse" />
                     </div>
                 </div>
             )
@@ -80,7 +80,7 @@ const LandingPage = ({ onGetStarted }) => {
                         <div className="absolute w-12 h-12 bg-purple-500/10 rounded-full border border-purple-500/20 animate-pulse" />
                         <div className="absolute w-2 h-2 bg-purple-500 rounded-full" />
                         {[0, 60, 120, 180, 240, 300].map((deg) => (
-                            <div 
+                            <div
                                 key={deg}
                                 className="absolute w-8 h-[1px] bg-white/10 origin-left"
                                 style={{ transform: `rotate(${deg}deg) translateX(12px)` }}
@@ -129,7 +129,7 @@ const LandingPage = ({ onGetStarted }) => {
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10">
                 <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-orange-500/[0.03] rounded-full blur-[150px]" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-500/[0.02] rounded-full blur-[150px]" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.02]" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`}} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.02]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
             </div>
 
             {/* Navbar - Premium Look */}
@@ -148,8 +148,8 @@ const LandingPage = ({ onGetStarted }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                     <button onClick={onGetStarted} className="hidden md:block text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-all">Sign In</button>
-                     <button
+                    <button onClick={onGetStarted} className="hidden md:block text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-all">Sign In</button>
+                    <button
                         onClick={onGetStarted}
                         className="px-8 py-3 bg-orange-500 hover:bg-white text-white hover:text-black rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-500/20 active:scale-95 hover:scale-105"
                     >
@@ -159,7 +159,7 @@ const LandingPage = ({ onGetStarted }) => {
             </nav>
 
             {/* Hero Section - Rachna Inspired */}
-            <section className="relative pt-48 pb-60 px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center">
+            <section className="relative pt-24 pb-24 px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center">
                 {/* Huge Watermark */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-black text-white/[0.01] pointer-events-none select-none z-[-1] tracking-tighter leading-none">
                     BURFI
@@ -202,7 +202,7 @@ const LandingPage = ({ onGetStarted }) => {
                             <div className="flex -space-x-4">
                                 {[1, 2, 3, 4, 5].map((idx) => (
                                     <div key={idx} className="w-12 h-12 rounded-full border-4 border-[#0A0A0A] bg-white/10 overflow-hidden">
-                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${idx+10}`} alt="User" className="w-full h-full object-cover" />
+                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${idx + 10}`} alt="User" className="w-full h-full object-cover" />
                                     </div>
                                 ))}
                             </div>
@@ -218,7 +218,7 @@ const LandingPage = ({ onGetStarted }) => {
             </section>
 
             {/* Features Section - Upgraded with Mockups */}
-            <section ref={featuresRef} className="py-32 px-6 md:px-12 max-w-7xl mx-auto">
+            <section ref={featuresRef} className="py-20 px-6 md:px-12 max-w-7xl mx-auto">
                 <div className="flex flex-col items-center text-center mb-32 space-y-6">
                     <h2 className="text-5xl md:text-7xl font-black tracking-tight text-white uppercase">Features</h2>
                     <div className="w-32 h-1 bg-orange-500/20 rounded-full mb-4" />
@@ -245,11 +245,12 @@ const LandingPage = ({ onGetStarted }) => {
             </section>
 
             {/* Same Humorous Banner from Burfi - The Merge */}
-            <div className="w-full bg-orange-500 overflow-hidden py-5 md:py-8 border-y border-orange-600 relative z-20 flex items-center shadow-[0_0_80px_rgba(249,115,22,0.2)]">
-                <motion.div 
+            {/* Seamless Humorous Banner (Integrated UI) */}
+            <div className="w-full bg-[#0A0A0A] overflow-hidden py-24 relative z-20 flex items-center">
+                <motion.div
                     animate={{ x: ["0%", "-50%"] }}
                     transition={{ repeat: Infinity, ease: "linear", duration: 40 }}
-                    className="flex text-black whitespace-nowrap w-max items-center"
+                    className="flex text-white/20 whitespace-nowrap w-max items-center"
                 >
                     {[...Array(2)].map((_, arrayIndex) => (
                         <div key={arrayIndex} className="flex items-center">
@@ -261,8 +262,8 @@ const LandingPage = ({ onGetStarted }) => {
                                 "Stop emailing links to yourself. Seriously."
                             ].map((text, i) => (
                                 <React.Fragment key={i}>
-                                    <span className="text-xs md:text-sm font-black uppercase tracking-[6px] px-20">{text}</span>
-                                    <Sparkles size={18} className="opacity-60" />
+                                    <span className="text-xl md:text-2xl font-black uppercase tracking-[8px] px-20">{text}</span>
+                                    <Sparkles size={24} className="opacity-40" />
                                 </React.Fragment>
                             ))}
                         </div>
@@ -271,10 +272,10 @@ const LandingPage = ({ onGetStarted }) => {
             </div>
 
             {/* Mechanism - Cleaner */}
-            <section ref={mechanismRef} className="py-48 px-6 md:px-12 max-w-7xl mx-auto">
+            <section ref={mechanismRef} className="py-20 px-6 md:px-12 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row items-end justify-between mb-32 gap-10">
                     <div className="space-y-6 max-w-2xl">
-                         <h2 className="text-5xl md:text-8xl font-black tracking-tight text-white leading-none uppercase">How it <br /><span className="font-cursive text-orange-500 normal-case tracking-tight">works.</span></h2>
+                        <h2 className="text-5xl md:text-8xl font-black tracking-tight text-white leading-none uppercase">How it <br /><span className="font-cursive text-orange-500 normal-case tracking-tight">works.</span></h2>
                     </div>
                 </div>
 
@@ -303,102 +304,110 @@ const LandingPage = ({ onGetStarted }) => {
             </section>
 
             {/* FAQ Section like Rachna */}
-            <section ref={faqRef} className="py-40 px-6 md:px-12 max-w-7xl mx-auto">
+            <section ref={faqRef} className="py-20 px-6 md:px-12 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
-                     <div className="space-y-8">
-                         <h2 className="text-5xl md:text-6xl font-black tracking-tight uppercase leading-[0.9]">Got Questions? <br /><span className="text-orange-500 font-cursive normal-case tracking-tight">We Got Answers</span></h2>
-                         <p className="text-white/30 text-lg max-w-md font-medium leading-relaxed">Clear, practical tips and guidance to help you design, build, and ship your memories with confidence.</p>
-                     </div>
-                     <div className="space-y-4">
-                         {faqs.map((f, i) => (
-                             <div key={i} className="border-b border-white/5">
-                                 <button 
-                                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                                     className="w-full py-8 flex items-center justify-between text-left group"
-                                 >
-                                     <span className="text-xl font-bold text-white group-hover:text-orange-500 transition-colors uppercase tracking-tight">{f.q}</span>
-                                     <ChevronDown size={24} className={`text-white transition-transform duration-500 ${openFaq === i ? 'rotate-180 text-orange-500' : 'opacity-20'}`} />
-                                 </button>
-                                 <AnimatePresence>
-                                     {openFaq === i && (
-                                         <motion.div
-                                             initial={{ height: 0, opacity: 0 }}
-                                             animate={{ height: "auto", opacity: 1 }}
-                                             exit={{ height: 0, opacity: 0 }}
-                                             className="overflow-hidden"
-                                         >
-                                             <p className="pb-8 text-white/40 text-base leading-relaxed">{f.a}</p>
-                                         </motion.div>
-                                     )}
-                                 </AnimatePresence>
-                             </div>
-                         ))}
-                     </div>
+                    <div className="space-y-8">
+                        <h2 className="text-5xl md:text-6xl font-black tracking-tight uppercase leading-[0.9]">Got Questions? <br /><span className="text-orange-500 font-cursive normal-case tracking-tight">We Got Answers</span></h2>
+                        <p className="text-white/30 text-lg max-w-md font-medium leading-relaxed">Clear, practical tips and guidance to help you design, build, and ship your memories with confidence.</p>
+                    </div>
+                    <div className="space-y-4">
+                        {faqs.map((f, i) => (
+                            <div key={i} className="border-b border-white/5">
+                                <button
+                                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                                    className="w-full py-8 flex items-center justify-between text-left group"
+                                >
+                                    <span className="text-xl font-bold text-white group-hover:text-orange-500 transition-colors uppercase tracking-tight">{f.q}</span>
+                                    <ChevronDown size={24} className={`text-white transition-transform duration-500 ${openFaq === i ? 'rotate-180 text-orange-500' : 'opacity-20'}`} />
+                                </button>
+                                <AnimatePresence>
+                                    {openFaq === i && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <p className="pb-8 text-white/40 text-base leading-relaxed">{f.a}</p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
 
             {/* Professional Multi-Column Footer like Rachna */}
-            <footer className="pt-40 pb-20 bg-black border-t border-white/5 relative overflow-hidden">
-                <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
-                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-16 mb-40">
-                        <div className="col-span-full lg:col-span-2 space-y-10">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-orange-500 rounded-xl">
-                                    <Sparkles size={20} className="text-white fill-current" />
-                                </div>
-                                <span className="text-3xl font-black tracking-tighter">Burfi</span>
-                            </div>
-                            <p className="text-white/30 text-lg max-w-xs font-medium leading-relaxed">
-                                A modern memory playground for turning imagination into organized knowledge.
-                            </p>
-                            <div className="flex gap-4">
-                               <a href="#" className="p-3 bg-white/5 hover:bg-orange-500 rounded-2xl transition-all"><Twitter size={20} /></a>
-                               <a href="#" className="p-3 bg-white/5 hover:bg-orange-500 rounded-2xl transition-all"><Linkedin size={20} /></a>
-                               <a href="#" className="p-3 bg-white/5 hover:bg-orange-500 rounded-2xl transition-all"><Instagram size={20} /></a>
-                               <a href="#" className="p-3 bg-white/5 hover:bg-orange-500 rounded-2xl transition-all"><YoutubeIcon size={20} /></a>
-                            </div>
-                        </div>
-
-                        <div className="space-y-8">
-                             <h4 className="text-[10px] font-black uppercase tracking-[4px] text-orange-500">Product</h4>
-                             <ul className="space-y-4 text-sm font-bold text-white/30">
-                                 <li><button onClick={() => scrollToSection(featuresRef)} className="hover:text-white transition-all">Features</button></li>
-                                 <li><button onClick={() => scrollToSection(mechanismRef)} className="hover:text-white transition-all">How it works</button></li>
-                                 <li><a href="#" className="hover:text-white transition-all">Templates</a></li>
-                                 <li><a href="#" className="hover:text-white transition-all">Changelog</a></li>
-                             </ul>
-                        </div>
-
-                        <div className="space-y-8">
-                             <h4 className="text-[10px] font-black uppercase tracking-[4px] text-orange-500">Legal</h4>
-                             <ul className="space-y-4 text-sm font-bold text-white/30">
-                                 <li><a href="#" className="hover:text-white transition-all">About</a></li>
-                                 <li><a href="#" className="hover:text-white transition-all">Privacy Policy</a></li>
-                                 <li><a href="#" className="hover:text-white transition-all">Terms of Service</a></li>
-                                 <li><a href="#" className="hover:text-white transition-all">Refund Policy</a></li>
-                             </ul>
-                        </div>
-
-                        <div className="space-y-8">
-                             <h4 className="text-[10px] font-black uppercase tracking-[4px] text-orange-500">Socials</h4>
-                             <ul className="space-y-4 text-sm font-bold text-white/30">
-                                 <li><a href="#" className="hover:text-white transition-all">GitHub</a></li>
-                                 <li><a href="#" className="hover:text-white transition-all">LinkedIn</a></li>
-                                 <li><a href="#" className="hover:text-white transition-all">Twitter</a></li>
-                                 <li><a href="#" className="hover:text-white transition-all">YouTube</a></li>
-                             </ul>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-10 pt-10 border-t border-white/5 opacity-20">
-                         <p className="text-[12px] font-black uppercase tracking-[1px]">Designed & Built by Tanyaaaaa</p>
-                         <p className="text-[12px] font-black uppercase tracking-[1px]">© 2026 all rights reserved</p>
-                    </div>
+            <footer className="group relative pt-60 pb-20 bg-[#0A0A0A]">
+                {/* Giant Animated Watermark (Bleeds into FAQ section for seamless look) */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/4 text-[28vw] font-black pointer-events-none select-none tracking-tighter leading-none z-0 italic 
+                    text-transparent bg-clip-text bg-gradient-to-t from-orange-500/20 to-orange-500/5 bg-[length:100%_0%] bg-no-repeat bg-bottom
+                    transition-all duration-[2000ms] ease-out
+                    [-webkit-text-stroke:1px_rgba(255,255,255,0.08)]
+                    group-hover:bg-[length:100%_100%] group-hover:[-webkit-text-stroke:1px_transparent]">
+                    BURFI
                 </div>
 
-                {/* Giant Footer Watermark like Rachna */}
-                <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 text-[30vw] font-black text-white/[0.02] pointer-events-none select-none tracking-tighter leading-none z-0">
-                    BURFI
+                <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 pt-20">
+                    <div className="flex flex-col lg:flex-row justify-between gap-20">
+                        {/* Left Side: Logo & Socials */}
+                        <div className="space-y-12">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-orange-500 rounded-xl">
+                                    <Sparkles size={24} className="text-white fill-current" />
+                                </div>
+                                <span className="text-4xl font-black tracking-tighter text-white font-cursive">Burfi</span>
+                            </div>
+
+                            <div className="flex gap-5">
+                                {[Twitter, Linkedin, Instagram, YoutubeIcon].map((Icon, idx) => (
+                                    <a key={idx} href="#" className="text-white/20 hover:text-white transition-colors">
+                                        <Icon size={22} />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Right Side: Link Columns */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-16 md:gap-24">
+                            <div className="space-y-8">
+                                <h4 className="text-[11px] font-black uppercase tracking-[4px] text-white/90">Product</h4>
+                                <ul className="space-y-4 text-sm font-medium text-white/30">
+                                    <li><button onClick={() => scrollToSection(featuresRef)} className="hover:text-orange-500 transition-all">Features</button></li>
+                                    <li><button onClick={() => scrollToSection(mechanismRef)} className="hover:text-white transition-all">How it works</button></li>
+                                    <li><a href="#" className="hover:text-white transition-all">Templates</a></li>
+                                    <li><a href="#" className="hover:text-white transition-all">Changelog</a></li>
+                                </ul>
+                            </div>
+
+                            <div className="space-y-8">
+                                <h4 className="text-[11px] font-black uppercase tracking-[4px] text-white/90">Legal</h4>
+                                <ul className="space-y-4 text-sm font-medium text-white/30">
+                                    <li><a href="#" className="hover:text-white transition-all">About Us</a></li>
+                                    <li><a href="#" className="hover:text-white transition-all">Privacy Policy</a></li>
+                                    <li><a href="#" className="hover:text-white transition-all">Terms & Conditions</a></li>
+                                    <li><a href="#" className="hover:text-white transition-all">Refund Policy</a></li>
+                                </ul>
+                            </div>
+
+                            <div className="space-y-8">
+                                <h4 className="text-[11px] font-black uppercase tracking-[4px] text-white/90">Socials</h4>
+                                <ul className="space-y-4 text-sm font-medium text-white/30">
+                                    <li><a href="#" className="hover:text-white transition-all">GitHub</a></li>
+                                    <li><a href="#" className="hover:text-white transition-all">LinkedIn</a></li>
+                                    <li><a href="#" className="hover:text-white transition-all">Twitter</a></li>
+                                    <li><a href="#" className="hover:text-white transition-all">YouTube</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Minimal Bottom Bar */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-20 mt-20 border-t border-white/5 opacity-30">
+                        <p className="text-[10px] font-black uppercase tracking-[2px]">Designed & Built by Tanyaaaaa</p>
+                        <p className="text-[10px] font-black uppercase tracking-[2px]">© 2026 all rights reserved</p>
+                    </div>
                 </div>
             </footer>
         </div>
