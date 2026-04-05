@@ -61,10 +61,11 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
     const fetchCollections = async () => {
         try {
             const res = await api.get(`${API_BASE}/collections`);
+            // If the user has intentionally deleted collections, respect the empty list from backend
             setCollections(res.data.data || []);
         } catch (err) { 
             console.error("Collections Error:", err); 
-            setCollections(["Uncategorized", "General", "Frontend", "UI"]);
+            setCollections(["Social", "Personal", "Shopping", "Important"]);
         }
     };
 
@@ -82,13 +83,17 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
 
     const handleDeleteCollection = async (name) => {
         try {
-            await api.delete(`${API_BASE}/collections`, { data: { name } });
+            // Optimistic update
             setCollections(prev => prev.filter(c => c !== name));
-            setItems(prev => prev.map(it => it.collectionName === name ? { ...it, collectionName: "Uncategorized" } : it));
+            setItems(prev => prev.filter(it => it.collectionName !== name));
             if (selectedCollection === name) setSelectedCollection(null);
+
+            await api.delete(`${API_BASE}/collections`, { data: { name } });
         } catch (err) {
             console.error("Delete collection error:", err);
+            // Fallback: re-fetch everything to ensure UI is in sync with server truth
             fetchCollections();
+            fetchItems();
         }
     }
 
@@ -408,56 +413,131 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                                {allUnifiedCollections.map((col, idx) => {
-                                                    const colItems = (items || []).filter(it => it.collectionName === col || (col === "Uncategorized" && (!it.collectionName || it.collectionName === "Uncategorized")) || (it.tags || []).includes(col));
-                                                    const collectionTags = [...new Set(colItems.flatMap(it => it.tags || []))].filter(t => t !== col).slice(0, 3);
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                                {allUnifiedCollections.map((rawCol, idx) => {
+                                                    const NAME_MAPPING = {
+                                                        "Uncategorized": "Social",
+                                                        "General": "Personal",
+                                                        "Frontend": "Shopping",
+                                                        "UI": "Important"
+                                                    };
+                                                    
+                                                    const col = NAME_MAPPING[rawCol] || rawCol;
+                                                    const colItems = (items || []).filter(it => it.collectionName === rawCol || (rawCol === "Uncategorized" && (!it.collectionName || it.collectionName === "Uncategorized")) || (it.tags || []).includes(rawCol));
+                                                    
+                                                    const collectionThemes = {
+                                                        Social: { color: "from-blue-600 to-cyan-400", shadow: "shadow-blue-500/20", glow: "group-hover:shadow-blue-400/40" },
+                                                        Personal: { color: "from-purple-600 to-pink-400", shadow: "shadow-purple-500/20", glow: "group-hover:shadow-purple-400/40" },
+                                                        Shopping: { color: "from-emerald-600 to-teal-400", shadow: "shadow-emerald-500/20", glow: "group-hover:shadow-emerald-400/40" },
+                                                        Important: { color: "from-red-600 to-orange-400", shadow: "shadow-red-500/20", glow: "group-hover:shadow-red-400/40" }
+                                                    };
+
+                                                    const theme = collectionThemes[col] || { color: "from-orange-600 to-yellow-400", shadow: "shadow-orange-500/20", glow: "group-hover:shadow-orange-400/40" };
+                                                    
+                                                    // Get custom cover from currentUser if it exists
+                                                    const customCover = currentUser?.collectionCovers?.[rawCol];
+
                                                     return (
-                                                        <div 
+                                                        <motion.div 
                                                             key={idx} 
-                                                            onClick={() => setSelectedCollection(col)}
-                                                            className="p-8 bg-[#1A1A1A] border border-white/5 rounded-[32px] relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-2xl cursor-pointer flex flex-col h-full"
+                                                            whileHover={{ y: -10, scale: 1.02 }}
+                                                            whileTap={{ scale: 0.98 }}
+                                                            onClick={() => setSelectedCollection(rawCol)}
+                                                            className={`group relative p-8 h-80 rounded-[40px] bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 hover:border-white/20 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl ${theme.shadow} ${theme.glow}`}
                                                         >
-                                                            <div className="absolute top-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                            {/* Background Cover (Fully Fitted Square) */}
+                                                            {customCover && (
+                                                                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-[40px]">
+                                                                    <img 
+                                                                        src={customCover} 
+                                                                        alt="" 
+                                                                        className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-all duration-700" 
+                                                                    />
+                                                                    <div className="absolute inset-0 bg-[#0A0A0A]/40" />
+                                                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/20 to-transparent" />
+                                                                </div>
+                                                            )}
+
+                                                            {/* Background Dynamic Glow (fallback/extra life) */}
+                                                            <div className={`absolute -top-24 -right-24 w-64 h-64 bg-gradient-to-br ${theme.color} opacity-0 group-hover:opacity-20 blur-[80px] transition-opacity duration-700`} />
+                                                            <div className={`absolute -bottom-24 -left-24 w-64 h-64 bg-gradient-to-br ${theme.color} opacity-0 group-hover:opacity-10 blur-[80px] transition-opacity duration-700`} />
+
+                                                            {/* Content Interaction Glow */}
+                                                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                                            <div className="relative z-10 h-full flex flex-col items-center justify-center text-center">
+                                                                {/* Icon Box with circular thumbnail if cover exists */}
+                                                                <div className="w-20 h-20 flex items-center justify-center mb-8 relative z-10 transition-all duration-500 group-hover:scale-110">
+                                                                    {customCover ? (
+                                                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl group-hover:border-orange-500/50 transition-colors duration-500">
+                                                                            <img src={customCover} className="w-full h-full object-cover" alt="" />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className={`p-5 bg-gradient-to-br from-white/5 to-white/[0.01] border border-white/10 rounded-full backdrop-blur-md group-hover:border-orange-500/50 transition-all duration-500`}>
+                                                                            <Folder size={28} className={`bg-gradient-to-br ${theme.color} bg-clip-text text-transparent`} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                <h2 className="text-3xl font-black text-white mb-2 tracking-tighter uppercase font-cursive group-hover:scale-110 transition-transform duration-500">{col}</h2>
+                                                                <div className="flex flex-col items-center gap-2">
+                                                                    <div className={`h-1 w-12 bg-gradient-to-r ${theme.color} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500`} />
+                                                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[4px] group-hover:text-white/60 transition-colors">{colItems.length} Saved Items</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Edit/Delete/Cover Action — Float on top */}
+                                                            <div className="absolute top-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0 z-20">
+                                                                <label 
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white transition-all backdrop-blur-3xl shadow-xl cursor-pointer"
+                                                                    title="Change Cover"
+                                                                >
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                                                    <input 
+                                                                        type="file" 
+                                                                        className="hidden" 
+                                                                        accept="image/*"
+                                                                        onChange={async (e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (!file) return;
+                                                                            const formData = new FormData();
+                                                                            formData.append('image', file);
+                                                                            formData.append('collectionName', rawCol);
+                                                                            try {
+                                                                                const res = await api.post('/auth/collection-cover', formData);
+                                                                                if (res.data.success) {
+                                                                                    onLogin(res.data.user); // update global user state to refresh covers
+                                                                                }
+                                                                            } catch (err) { console.error("Cover upload failed", err); }
+                                                                        }}
+                                                                    />
+                                                                </label>
                                                                 <button 
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         const newName = window.prompt("Rename collection:", col);
-                                                                        if (newName && newName !== col) {
-                                                                            handleRenameCollection(col, newName);
+                                                                        if (newName && newName !== rawCol) {
+                                                                            handleRenameCollection(rawCol, newName);
                                                                         }
                                                                     }}
-                                                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-all"
+                                                                    className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white transition-all backdrop-blur-3xl shadow-xl"
                                                                 >
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                                                 </button>
                                                                 <button 
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        if(window.confirm(`Delete ${col}? Items will be moved to Uncategorized.`)) {
-                                                                            handleDeleteCollection(col);
+                                                                        if(window.confirm(`Delete ${col}? All ${colItems.length} items will be permanently removed from Burfi.`)) {
+                                                                            handleDeleteCollection(rawCol);
                                                                         }
                                                                     }}
-                                                                    className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-500 transition-all"
+                                                                    className="p-3 bg-red-500/5 hover:bg-red-500/20 border border-red-500/20 rounded-2xl text-red-500 transition-all backdrop-blur-3xl shadow-xl"
                                                                 >
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                                                 </button>
                                                             </div>
-                                                            <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-orange-500/10 blur-[40px] rounded-full pointer-events-none group-hover:bg-orange-500/20 transition-all" />
-                                                            <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 text-orange-500 group-hover:scale-110 transition-transform">
-                                                                <Folder size={20} className={colItems.length > 0 ? "fill-current" : ""} />
-                                                            </div>
-                                                            <h3 className="text-2xl font-black text-white mb-2">{col || "General"}</h3>
-                                                            <p className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">{colItems.length} Saved Items</p>
-                                                            
-                                                            {collectionTags.length > 0 && (
-                                                                <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-white/5 relative z-10">
-                                                                    {collectionTags.map(tag => (
-                                                                        <span key={tag} className="px-2 py-1 bg-white/5 border border-white/10 rounded flex-shrink-0 text-[9px] font-black text-white/50 uppercase tracking-wider">{tag}</span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                        </motion.div>
                                                     )
                                                 })}
                                             </div>
@@ -496,7 +576,7 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                                 </button>
                                                 <button 
                                                     onClick={() => {
-                                                        if(window.confirm(`Delete ${selectedCollection}? Items will be moved to Uncategorized.`)) {
+                                                        if(window.confirm(`Delete ${selectedCollection}? ALL saved memories in this collection will be permanently deleted from Burfi.`)) {
                                                             handleDeleteCollection(selectedCollection);
                                                         }
                                                     }}
@@ -609,36 +689,37 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                                 transition={{ delay: i * 0.1 }}
                                                 onClick={() => window.open(item.url, '_blank')}
                                                 className="relative group cursor-pointer flex flex-col"
-                                            >
-                                                {/* Type Context Header (appears on hover) */}
-                                                <div className="flex items-center gap-3 mb-6 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/5 backdrop-blur-md ${isYT ? 'text-red-500' : 'text-orange-500'}`}>
-                                                        {isYT ? <Play size={10} fill="currentColor" /> : <Sparkles size={10} />}
-                                                    </span>
-                                                    <span className="text-[9px] font-black uppercase tracking-[4px] text-white/40 group-hover:text-white/80 transition-colors line-clamp-1">
-                                                        {item.title}
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-10 relative z-10 w-full pl-4 md:pl-8 border-l-2 border-transparent group-hover:border-orange-500/50 transition-colors duration-500">
+                                            >                                                <div className="space-y-10 relative z-10 w-full pl-4 md:pl-10 border-l border-white/5 group-hover:border-orange-500/30 transition-colors duration-500">
                                                     <Quote size={120} className="absolute -top-16 -left-12 text-white/[0.02] pointer-events-none group-hover:text-orange-500/10 transition-colors duration-700 -rotate-12" />
                                                     
-                                                    {highlightList.map((text, idx) => (
-                                                        <div key={idx} className="relative">
-                                                            <p className="text-3xl md:text-5xl font-medium leading-[1.2] text-white/40 font-serif tracking-tighter group-hover:text-white transition-all duration-500 relative z-10 group-hover:drop-shadow-[0_0_20px_rgba(249,115,22,0.3)] group-hover:italic">
-                                                                "{text}"
-                                                            </p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                
-                                                {/* Footer metadata */}
-                                                <div className="flex items-center gap-4 mt-8 ml-4 md:ml-8">
-                                                    <span className="w-12 h-[1px] bg-white/10 group-hover:w-24 group-hover:bg-orange-500 transition-all duration-500" />
-                                                    <p className="text-[10px] font-black uppercase tracking-[4px] text-white/20 group-hover:text-orange-500 transition-colors flex items-center gap-2">
-                                                        {item.source || 'Knowledge Mine'} 
-                                                        <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity transform -translate-x-2 group-hover:translate-x-0" />
-                                                    </p>
+                                                    {/* Context header (small and subtle) */}
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center bg-white/5 border border-white/5 backdrop-blur-md ${isYT ? 'text-red-500' : 'text-orange-500'}`}>
+                                                            {isYT ? <Play size={8} fill="currentColor" /> : <Sparkles size={8} />}
+                                                        </span>
+                                                        <span className="text-[9px] font-black uppercase tracking-[3px] text-white/40 group-hover:text-white/80 transition-colors">
+                                                            {item.title}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-8">
+                                                        {highlightList.map((text, idx) => (
+                                                            <div key={idx} className="relative">
+                                                                <p className="text-xl md:text-3xl font-medium leading-[1.4] text-white/40 font-serif tracking-tight group-hover:text-white transition-all duration-500 relative z-10 italic">
+                                                                    "{text}"
+                                                                </p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    {/* Footer metadata */}
+                                                    <div className="flex items-center gap-4 mt-10">
+                                                        <span className="w-10 h-[1px] bg-white/10 group-hover:w-20 group-hover:bg-orange-500 transition-all duration-500" />
+                                                        <p className="text-[9px] font-black uppercase tracking-[4px] text-white/20 group-hover:text-orange-500 transition-colors flex items-center gap-2">
+                                                            {item.source || 'Knowledge Mine'} 
+                                                            <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </motion.div>
                                         )

@@ -1,5 +1,5 @@
 import express from "express"
-import { registerUser, loginUser, getMe, updateProfile } from "../controllers/authcontroller.js"
+import { registerUser, loginUser, getMe, updateProfile, updateCollectionCover } from "../controllers/authcontroller.js"
 import { protect } from "../middleware/authMiddleware.js"
 import { storage } from "../config/cloudinary.js"
 import multer from "multer"
@@ -11,5 +11,6 @@ router.post("/register", registerUser)
 router.post("/login", loginUser)
 router.get("/me", getMe)
 router.put("/profile", protect, upload.single('avatar'), updateProfile)
+router.post("/collection-cover", protect, upload.single('image'), updateCollectionCover)
 
 export default router

@@ -7,6 +7,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [isEntered, setIsEntered] = useState(false);
 
   useEffect(() => {
     // Restore session from localStorage
@@ -26,13 +27,23 @@ function App() {
   const handleLogin = (user) => {
     setCurrentUser(user);
     setShowAuth(false);
+    setIsEntered(true); // Jump into the app after successful login
   };
   
-  const handleLogout = () => setCurrentUser(null);
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setShowAuth(false);
+    setIsEntered(false);
+    localStorage.removeItem('burfi_user');
+    localStorage.removeItem('burfi_token');
+    // Force a reload to ensure all state is wiped and we hit the landing page fresh
+    window.location.href = '/'; 
+  };
 
   if (!authChecked) return null; // prevent flash
 
-  if (currentUser) {
+  // Show the main app only if logged in AND they have "entered" via landing page
+  if (currentUser && isEntered) {
     return (
       <div className="App">
         <Home currentUser={currentUser} onLogout={handleLogout} onLogin={handleLogin} />
@@ -40,11 +51,19 @@ function App() {
     );
   }
 
+  // Otherwise, decide between Landing and Auth
   return (
     <div className="App">
       {showAuth 
         ? <AuthPage onLogin={handleLogin} onBack={() => setShowAuth(false)} />
-        : <LandingPage onGetStarted={() => setShowAuth(true)} />
+        : <LandingPage onGetStarted={() => {
+            // Force a fresh login every time from the landing page 
+            // for maximum privacy and to prevent past user accounts from opening.
+            localStorage.removeItem('burfi_user');
+            localStorage.removeItem('burfi_token');
+            setCurrentUser(null);
+            setShowAuth(true);
+          }} />
       }
     </div>
   );

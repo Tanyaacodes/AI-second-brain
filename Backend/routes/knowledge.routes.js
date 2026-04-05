@@ -26,12 +26,12 @@ router.get("/", protect, getallknowledge)
 router.get("/search", protect, searchKnowledge)
 router.get("/resurface", protect, resurfaceMemories)
 router.get("/scrape", optionalProtect, fetchUrlMetadata)
-router.delete("/:id", protect, deleteKnowledge)
-router.put("/:id/revisit", protect, toggleRevisit)
 router.get("/collections", protect, getCollections)
 router.post("/collections", protect, createCollection)
 router.put("/collections/rename", protect, renameCollection)
 router.delete("/collections", protect, deleteCollection)
+router.delete("/:id", protect, deleteKnowledge)
+router.put("/:id/revisit", protect, toggleRevisit)
 
 
 export default router

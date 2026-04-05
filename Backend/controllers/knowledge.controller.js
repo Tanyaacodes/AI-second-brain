@@ -377,10 +377,9 @@ export const deleteCollection = async (req, res) => {
         const { name } = req.body;
         if (!name) return res.status(400).json({ success: false, message: "Collection name required" });
 
-        // Reset items
-        await Knowledge.updateMany(
-            { user: req.user._id, collectionName: name },
-            { $set: { collectionName: "Uncategorized" } }
+        // Delete all items in this collection permanently
+        await Knowledge.deleteMany(
+            { user: req.user._id, collectionName: name }
         );
 
         // Remove from user

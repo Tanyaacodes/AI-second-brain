@@ -40,14 +40,14 @@ const Navbar = ({ activeView, setActiveView, onLogout, currentUser, onLogin }) =
         formData.append('name', currentUser.name);
 
         try {
-            const res = await api.put('/auth/profile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            localStorage.setItem('burfi_user', JSON.stringify(res.data.user));
-            if (onLogin) onLogin(res.data.user);
+            // Let Axios handle headers automatically for FormData with boundary
+            const res = await api.put('/auth/profile', formData);
+            if (res.data.user) {
+                localStorage.setItem('burfi_user', JSON.stringify(res.data.user));
+                if (onLogin) onLogin(res.data.user);
+            }
         } catch (err) {
             console.error("Avatar upload failed:", err);
-            alert("Upload failed. Please try again.");
         } finally {
             setUploading(false);
         }

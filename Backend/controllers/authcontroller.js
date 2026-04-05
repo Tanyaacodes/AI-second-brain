@@ -45,7 +45,7 @@ export const getMe = async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_secret")
         const user = await User.findById(decoded.id).select('-password')
         if (!user) return res.status(404).json({ message: "User not found" })
-        res.json({ user: { id: user._id, name: user.name, email: user.email, avatar: user.avatar } })
+        res.json({ user: { id: user._id, name: user.name, email: user.email, avatar: user.avatar, collectionCovers: user.collectionCovers || {} } })
     } catch (err) {
         res.status(401).json({ message: "Invalid token" })
     }
@@ -59,7 +59,28 @@ export const updateProfile = async (req, res) => {
             updateData.avatar = req.file.path;
         }
         const user = await User.findByIdAndUpdate(req.user._id, updateData, { new: true }).select("-password");
-        res.json({ user: { id: user._id, name: user.name, email: user.email, avatar: user.avatar } });
+        res.json({ user: { id: user._id, name: user.name, email: user.email, avatar: user.avatar, collectionCovers: user.collectionCovers || {} } });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+export const updateCollectionCover = async (req, res) => {
+    try {
+        const { collectionName } = req.body;
+        if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+        const user = await User.findById(req.user._id);
+        if (!user.collectionCovers) user.collectionCovers = new Map();
+        user.collectionCovers.set(collectionName, req.file.path);
+        
+        await user.save();
+        res.json({ 
+            success: true, 
+            collectionName, 
+            coverUrl: req.file.path,
+            user: { id: user._id, name: user.name, email: user.email, avatar: user.avatar, collectionCovers: user.collectionCovers } 
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
