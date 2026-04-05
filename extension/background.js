@@ -1,4 +1,7 @@
-const API_BASE = 'http://localhost:5000/api/v1/knowledge';
+// API_BASE comes from config.js injected in manifest.json
+// For service workers, we import it differently using importScripts
+try { importScripts('config.js'); } catch(e) {}
+const API_BASE = (typeof BURFI_CONFIG !== 'undefined') ? BURFI_CONFIG.API_BASE + '/knowledge' : 'http://localhost:5000/api/v1/knowledge';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({

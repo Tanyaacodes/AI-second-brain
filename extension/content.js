@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:5000/api/v1';
+// Supports both local and deployed backend via config.js
+const API_BASE = (typeof BURFI_CONFIG !== 'undefined') ? BURFI_CONFIG.API_BASE : 'http://localhost:5000/api/v1';
 let burfiToken = null;
 
 // Inject Burfi UI
@@ -80,10 +81,14 @@ document.getElementById('burfi-close').addEventListener('click', closeBurfi);
 burfiOverlay.addEventListener('click', closeBurfi);
 
 // Keyboard Shortcut Listener
+// NOTE: Must call sendResponse() to close the message channel, otherwise
+// Chrome throws: "message channel closed before a response was received"
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "toggle-burfi") {
         burfiSidebar.classList.contains('open') ? closeBurfi() : openBurfi();
+        sendResponse({ success: true }); // ← always close the channel
     }
+    return false; // sync — no need to keep channel open
 });
 
 // Drag & Drop

@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:5000/api/v1';
+// API_BASE comes from config.js (loaded via manifest.json)
+const API_BASE = (typeof BURFI_CONFIG !== 'undefined') ? BURFI_CONFIG.API_BASE : 'http://localhost:5000/api/v1';
 const statusEl = document.getElementById('status');
 const saveBtn = document.getElementById('saveBtn');
 const saveView = document.getElementById('saveView');

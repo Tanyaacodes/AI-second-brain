@@ -41,3 +41,6 @@ Thumbs.db
 coverage/
 .temp/
 /tmp/
+
+# Extension local config (contains deployed API URL — do not commit)
+extension/config.js

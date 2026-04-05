@@ -4,7 +4,12 @@
   "version": "1.0",
   "description": "Save everything to your Burfi Second Brain instantly.",
   "permissions": ["activeTab", "scripting", "storage", "contextMenus", "notifications"],
-  "host_permissions": ["http://localhost:5000/*"],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://ai-second-brain-backend.onrender.com/*",
+    "https://*.onrender.com/*",
+    "https://*.vercel.app/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -28,8 +33,14 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["config.js", "content.js"],
       "css": ["content.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["config.js", "icon.png"],
+      "matches": ["<all_urls>"]
     }
   ],
   "icons": {
