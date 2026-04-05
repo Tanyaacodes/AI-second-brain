@@ -575,7 +575,7 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                 </div>
                                 
 
-                                <div className="columns-1 md:columns-2 lg:columns-3 gap-10 space-y-10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-24 gap-x-12 lg:gap-x-16 items-start">
                                     {items.filter(item => (item.highlights && item.highlights.length > 0) || item.summary || item.content).map((item, i) => {
                                         const highlightList = (item.highlights && item.highlights.length > 0) 
                                             ? item.highlights 
@@ -608,7 +608,7 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                                 viewport={{ once: true }}
                                                 transition={{ delay: i * 0.1 }}
                                                 onClick={() => window.open(item.url, '_blank')}
-                                                className="break-inside-avoid mb-24 relative group cursor-pointer flex flex-col"
+                                                className="relative group cursor-pointer flex flex-col"
                                             >
                                                 {/* Type Context Header (appears on hover) */}
                                                 <div className="flex items-center gap-3 mb-6 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
