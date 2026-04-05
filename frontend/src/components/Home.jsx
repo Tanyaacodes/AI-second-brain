@@ -226,6 +226,11 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
         return item.type === activeFilter;
     });
 
+    const allUnifiedCollections = [...new Set([
+        ...collections,
+        ...(items || []).flatMap(it => it.tags || [])
+    ])];
+
     // Derived Component Views
     const ClipperComponent = <Clipper 
         newSave={newSave}
@@ -264,6 +269,7 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                     onRevisit={handleRevisit}
                                     getRelativeTime={getRelativeTime}
                                     setActiveView={setActiveView}
+                                    setActiveFilter={setActiveFilter}
                                     ClipperComponent={ClipperComponent} 
                                     currentUser={currentUser}
                                 />
@@ -391,7 +397,7 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                             </button>
                                         </div>
                                         
-                                        {collections.length === 0 ? (
+                                        {allUnifiedCollections.length === 0 ? (
                                             <div className="col-span-full h-96 flex flex-col items-center justify-center bg-white/[0.02] border-2 border-dashed border-white/10 rounded-[64px] text-center space-y-6 max-w-5xl mx-auto px-10 py-20">
                                                 <div className="p-6 bg-white/5 rounded-[32px]"><Folder size={32} className="text-white/20" /></div>
                                                 <div>
@@ -403,13 +409,14 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                             </div>
                                         ) : (
                                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                                {collections.map((col, idx) => {
-                                                    const colItems = (items || []).filter(it => it.collectionName === (col || "Uncategorized"));
+                                                {allUnifiedCollections.map((col, idx) => {
+                                                    const colItems = (items || []).filter(it => it.collectionName === col || (col === "Uncategorized" && (!it.collectionName || it.collectionName === "Uncategorized")) || (it.tags || []).includes(col));
+                                                    const collectionTags = [...new Set(colItems.flatMap(it => it.tags || []))].filter(t => t !== col).slice(0, 3);
                                                     return (
                                                         <div 
                                                             key={idx} 
                                                             onClick={() => setSelectedCollection(col)}
-                                                            className="p-8 bg-[#1A1A1A] border border-white/5 rounded-[32px] relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-2xl cursor-pointer"
+                                                            className="p-8 bg-[#1A1A1A] border border-white/5 rounded-[32px] relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-2xl cursor-pointer flex flex-col h-full"
                                                         >
                                                             <div className="absolute top-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                                 <button 
@@ -441,7 +448,15 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                                                 <Folder size={20} className={colItems.length > 0 ? "fill-current" : ""} />
                                                             </div>
                                                             <h3 className="text-2xl font-black text-white mb-2">{col || "General"}</h3>
-                                                            <p className="text-xs font-bold text-white/40 uppercase tracking-widest">{colItems.length} Saved Items</p>
+                                                            <p className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">{colItems.length} Saved Items</p>
+                                                            
+                                                            {collectionTags.length > 0 && (
+                                                                <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-white/5 relative z-10">
+                                                                    {collectionTags.map(tag => (
+                                                                        <span key={tag} className="px-2 py-1 bg-white/5 border border-white/10 rounded flex-shrink-0 text-[9px] font-black text-white/50 uppercase tracking-wider">{tag}</span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )
                                                 })}
@@ -450,29 +465,55 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                     </>
                                 ) : (
                                     <div className="space-y-10">
-                                        <div className="flex items-center gap-6">
-                                            <button 
-                                                onClick={() => setSelectedCollection(null)}
-                                                className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white hover:bg-white hover:text-black transition-all"
-                                            >
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                                            </button>
-                                            <div>
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <Folder size={20} className="text-orange-500 fill-current" />
-                                                    <span className="text-xs font-black uppercase tracking-widest text-white/40">Collection</span>
+                                        <div className="flex items-center justify-between w-full">
+                                            <div className="flex items-center gap-6">
+                                                <button 
+                                                    onClick={() => setSelectedCollection(null)}
+                                                    className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white hover:bg-white hover:text-black transition-all"
+                                                >
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                                                </button>
+                                                <div>
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <Folder size={20} className="text-orange-500 fill-current" />
+                                                        <span className="text-xs font-black uppercase tracking-widest text-white/40">Collection</span>
+                                                    </div>
+                                                    <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white font-cursive">{selectedCollection}</h1>
                                                 </div>
-                                                <h1 className="text-5xl font-black tracking-tighter text-white font-cursive">{selectedCollection}</h1>
+                                            </div>
+
+                                            <div className="flex items-center gap-3">
+                                                <button 
+                                                    onClick={() => {
+                                                        const newName = window.prompt("Rename collection:", selectedCollection);
+                                                        if (newName && newName !== selectedCollection) {
+                                                            handleRenameCollection(selectedCollection, newName);
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all flex items-center gap-2 hidden md:flex"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Rename
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if(window.confirm(`Delete ${selectedCollection}? Items will be moved to Uncategorized.`)) {
+                                                            handleDeleteCollection(selectedCollection);
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-500 transition-all flex items-center gap-2"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> <span className="hidden md:inline">Delete</span>
+                                                </button>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                            {items.filter(it => it.collectionName === selectedCollection).length === 0 ? (
+                                            {items.filter(it => it.collectionName === selectedCollection || (it.tags || []).includes(selectedCollection)).length === 0 ? (
                                                 <div className="col-span-full py-20 text-center text-white/20 font-black uppercase tracking-widest border-2 border-dashed border-white/5 rounded-[48px]">
                                                     This collection is empty.
                                                 </div>
                                             ) : (
-                                                items.filter(it => it.collectionName === selectedCollection).map(item => (
+                                                items.filter(it => it.collectionName === selectedCollection || (it.tags || []).includes(selectedCollection)).map(item => (
                                                     <KnowledgeCard key={item._id} item={item} onDelete={handleDelete} onRevisit={handleRevisit} getRelativeTime={getRelativeTime} />
                                                 ))
                                             )}
@@ -533,6 +574,7 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                     </motion.p>
                                 </div>
                                 
+
                                 <div className="columns-1 md:columns-2 lg:columns-3 gap-10 space-y-10">
                                     {items.filter(item => (item.highlights && item.highlights.length > 0) || item.summary || item.content).map((item, i) => {
                                         const highlightList = (item.highlights && item.highlights.length > 0) 
@@ -565,56 +607,38 @@ const Home = ({ currentUser, onLogout, onLogin }) => {
                                                 whileInView={{ opacity: 1, y: 0 }}
                                                 viewport={{ once: true }}
                                                 transition={{ delay: i * 0.1 }}
-                                                whileHover={{ y: -8 }}
-                                                className={`break-inside-avoid p-10 flex flex-col gap-8 bg-[#111111] border ${borderColors[typeId] || 'border-white/5'} rounded-[48px] transition-all duration-500 shadow-3xl group relative overflow-hidden`}
+                                                onClick={() => window.open(item.url, '_blank')}
+                                                className="break-inside-avoid mb-24 relative group cursor-pointer flex flex-col"
                                             >
-                                                {/* Decorative Quote Mark */}
-                                                <Quote size={120} className="absolute -top-6 -left-6 text-white/[0.03] rotate-12 pointer-events-none group-hover:text-orange-500/5 transition-colors" />
-                                                
-                                                {/* Branding Accent */}
-                                                <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${colors[typeId] || 'from-white/10 to-transparent'} blur-[60px] pointer-events-none opacity-50 group-hover:opacity-80 transition-opacity`} />
-                                                
-                                                <div className="flex items-center justify-between relative z-10">
-                                                     <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10">
-                                                        <span className={isYT ? 'text-red-500' : 'text-orange-500'}>
-                                                            {isYT ? <Play size={14} fill="currentColor" /> : <Sparkles size={14} />}
-                                                        </span>
-                                                        <span className="text-[10px] font-black uppercase tracking-[3px] text-white/60">{isYT ? 'Video Insight' : `${item.type || 'Concept'} Highlight`}</span>
-                                                     </div>
-                                                     <button 
-                                                        onClick={() => window.open(item.url, '_blank')}
-                                                        className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-orange-500 hover:text-white rounded-2xl transition-all"
-                                                     >
-                                                        <ExternalLink size={16} />
-                                                     </button>
+                                                {/* Type Context Header (appears on hover) */}
+                                                <div className="flex items-center gap-3 mb-6 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/5 backdrop-blur-md ${isYT ? 'text-red-500' : 'text-orange-500'}`}>
+                                                        {isYT ? <Play size={10} fill="currentColor" /> : <Sparkles size={10} />}
+                                                    </span>
+                                                    <span className="text-[9px] font-black uppercase tracking-[4px] text-white/40 group-hover:text-white/80 transition-colors line-clamp-1">
+                                                        {item.title}
+                                                    </span>
                                                 </div>
 
-                                                <div className="space-y-8 relative z-10">
+                                                <div className="space-y-10 relative z-10 w-full pl-4 md:pl-8 border-l-2 border-transparent group-hover:border-orange-500/50 transition-colors duration-500">
+                                                    <Quote size={120} className="absolute -top-16 -left-12 text-white/[0.02] pointer-events-none group-hover:text-orange-500/10 transition-colors duration-700 -rotate-12" />
+                                                    
                                                     {highlightList.map((text, idx) => (
-                                                        <div key={idx} className="relative pl-6">
-                                                            <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-full ${isYT ? 'bg-red-500/40' : 'bg-orange-500/40'}`} />
-                                                            <p className="text-xl md:text-2xl font-medium leading-relaxed italic text-white/90 font-serif tracking-tight group-hover:text-white transition-colors">
+                                                        <div key={idx} className="relative">
+                                                            <p className="text-3xl md:text-5xl font-medium leading-[1.2] text-white/40 font-serif tracking-tighter group-hover:text-white transition-all duration-500 relative z-10 group-hover:drop-shadow-[0_0_20px_rgba(249,115,22,0.3)] group-hover:italic">
                                                                 "{text}"
                                                             </p>
                                                         </div>
                                                     ))}
                                                 </div>
                                                 
-                                                <div className="flex items-center gap-5 pt-8 border-t border-white/5 mt-2 relative z-10">
-                                                    <div className="w-12 h-12 rounded-[18px] bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-xl ring-2 ring-transparent group-hover:ring-orange-500/20 transition-all">
-                                                        {item.image ? (
-                                                            <img src={item.image} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                                        ) : (
-                                                            <div className={`w-3 h-3 rounded-full ${isYT ? 'bg-red-500' : 'bg-orange-500'} animate-pulse`} />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex flex-col gap-1.5 overflow-hidden">
-                                                        <p className="text-xs font-black uppercase tracking-wider text-white line-clamp-1 group-hover:text-orange-500 transition-colors uppercase">{item.title}</p>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="w-4 h-[1px] bg-white/20" />
-                                                            <p className="text-[9px] font-bold uppercase tracking-[3px] text-white/30 truncate">{item.source || 'Knowledge Mine'}</p>
-                                                        </div>
-                                                    </div>
+                                                {/* Footer metadata */}
+                                                <div className="flex items-center gap-4 mt-8 ml-4 md:ml-8">
+                                                    <span className="w-12 h-[1px] bg-white/10 group-hover:w-24 group-hover:bg-orange-500 transition-all duration-500" />
+                                                    <p className="text-[10px] font-black uppercase tracking-[4px] text-white/20 group-hover:text-orange-500 transition-colors flex items-center gap-2">
+                                                        {item.source || 'Knowledge Mine'} 
+                                                        <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity transform -translate-x-2 group-hover:translate-x-0" />
+                                                    </p>
                                                 </div>
                                             </motion.div>
                                         )

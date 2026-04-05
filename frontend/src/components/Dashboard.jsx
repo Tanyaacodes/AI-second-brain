@@ -6,12 +6,12 @@ import {
 } from 'lucide-react';
 import KnowledgeCard from './KnowledgeCard';
 
-const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setActiveView, ClipperComponent, currentUser }) => {
+const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setActiveView, setActiveFilter, ClipperComponent, currentUser }) => {
     const stats = [
-        { label: "Total Items", value: (items || []).length || 0, icon: Database, color: "text-purple-400" },
-        { label: "Links", value: (items || []).filter(i => (i.type === 'link' || i.type === 'article') && !(i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: LinkIcon, color: "text-blue-400" },
-        { label: "Videos", value: (items || []).filter(i => i.type === 'video' || (i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: Share2, color: "text-red-400" },
-        { label: "Notes", value: (items || []).filter(i => i.type === 'note').length || 0, icon: FileText, color: "text-green-400" },
+        { label: "Total Items", value: (items || []).length || 0, icon: Database, color: "text-purple-400", filterType: "all" },
+        { label: "Links", value: (items || []).filter(i => (i.type === 'link' || i.type === 'article') && !(i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: LinkIcon, color: "text-blue-400", filterType: "article" },
+        { label: "Videos", value: (items || []).filter(i => i.type === 'video' || (i.url?.includes('youtube.com') || i.url?.includes('youtu.be'))).length || 0, icon: Share2, color: "text-red-400", filterType: "video" },
+        { label: "Notes", value: (items || []).filter(i => i.type === 'note').length || 0, icon: FileText, color: "text-green-400", filterType: "note" },
     ];
 
     return (
@@ -41,7 +41,16 @@ const Dashboard = ({ items, memories, onDelete, onRevisit, getRelativeTime, setA
                 {/* RIGHT: Vertical Stats (Mobile: 2x2 Grid, Desktop: Column) */}
                 <div className="w-full lg:w-60 xl:w-64 grid grid-cols-2 lg:flex lg:flex-col gap-3 shrink-0 mt-6 lg:mt-12">
                     {stats.map((stat, i) => (
-                        <div key={i} className="bg-white/5 border border-white/10 px-5 py-4 rounded-[24px] flex items-center gap-5 shadow-lg relative overflow-hidden group hover:border-orange-500/30 transition-all">
+                        <div 
+                            key={i} 
+                            onClick={() => {
+                                if (setActiveFilter && setActiveView) {
+                                    setActiveFilter(stat.filterType);
+                                    setActiveView('archive');
+                                }
+                            }}
+                            className="bg-white/5 border border-white/10 px-5 py-4 rounded-[24px] flex items-center gap-5 shadow-lg relative overflow-hidden group hover:border-orange-500/30 transition-all cursor-pointer"
+                        >
                             <div className={`p-3 bg-white/5 rounded-xl ${stat.color} group-hover:scale-110 transition-transform shrink-0`}>
                                 <stat.icon size={16} />
                             </div>

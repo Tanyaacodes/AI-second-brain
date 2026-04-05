@@ -12,11 +12,11 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [isDancing, setIsDancing] = useState(false);
   const beatIntensityRef = useRef(0);
-  
+
   // Track container size for "Bulletproof" Canvas Sizing (Fixes Black Screen)
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     const observer = new ResizeObserver((entries) => {
       if (entries[0]) {
         setDimensions({
@@ -25,7 +25,7 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
         });
       }
     });
-    
+
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
@@ -37,9 +37,9 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
       forceRef.current.d3Force('link').distance(120);
       forceRef.current.d3Force('x', d3.forceX().strength(0.1));
       forceRef.current.d3Force('y', d3.forceY().strength(0.1));
-      
+
       setTimeout(() => {
-        if (forceRef.current) forceRef.current.zoomToFit(400, 150); 
+        if (forceRef.current) forceRef.current.zoomToFit(400, 150);
       }, 800);
     }
   }, [items]);
@@ -59,21 +59,21 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
             const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
             analyserRef.current.getByteFrequencyData(dataArray);
             const average = dataArray.reduce((p, c) => p + c, 0) / dataArray.length;
-            
-            beatIntensityRef.current = average / 25; 
+
+            beatIntensityRef.current = average / 25;
 
             // REVEALING THE "USER FAVORITE" MOVEMENT
             const simulation = graph.d3Simulation();
             if (simulation) {
               simulation.alphaTarget(0.8).restart(); // Keeps physics "hot"
-              
+
               const nodes = simulation.nodes();
               nodes.forEach(node => {
                 // High-energy vibration and spin from the first version
-                const multiplier = average / 4; 
+                const multiplier = average / 4;
                 node.vx += (Math.random() - 0.5) * multiplier;
                 node.vy += (Math.random() - 0.5) * multiplier;
-                
+
                 // Extra jitter for visual "spin" sensation
                 if (average > 30) {
                   node.x += (Math.random() - 0.5) * (average / 12);
@@ -83,10 +83,10 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
             }
 
             if (graph.d3Force && graph.d3Force('charge')) {
-               graph.d3Force('charge').strength(-350 - (average * 50));
+              graph.d3Force('charge').strength(-350 - (average * 50));
             }
           }
-        } catch (e) {}
+        } catch (e) { }
         animationRef.current = requestAnimationFrame(animate);
       };
       animate();
@@ -96,11 +96,11 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
         audioRef.current.pause();
         const graph = forceRef.current;
         if (graph && typeof graph.d3Simulation === 'function') {
-            const sim = graph.d3Simulation();
-            if (sim) sim.alphaTarget(0).alpha(0.1).restart();
-            if (graph.d3Force && graph.d3Force('charge')) {
-                graph.d3Force('charge').strength(-250);
-            }
+          const sim = graph.d3Simulation();
+          if (sim) sim.alphaTarget(0).alpha(0.1).restart();
+          if (graph.d3Force && graph.d3Force('charge')) {
+            graph.d3Force('charge').strength(-250);
+          }
         }
       }
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -113,30 +113,30 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
 
   const toggleDance = () => {
     if (!audioRef.current) {
-        const audio = new Audio('/beat.mp3');
-        audio.loop = true;
-        audio.crossOrigin = "anonymous";
-        audioRef.current = audio;
+      const audio = new Audio('/beat.mp3');
+      audio.loop = true;
+      audio.crossOrigin = "anonymous";
+      audioRef.current = audio;
 
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioContext = new AudioContext();
-        analyserRef.current = audioContext.createAnalyser();
-        analyserRef.current.fftSize = 128;
-        
-        const source = audioContext.createMediaElementSource(audio);
-        source.connect(analyserRef.current);
-        analyserRef.current.connect(audioContext.destination);
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContext();
+      analyserRef.current = audioContext.createAnalyser();
+      analyserRef.current.fftSize = 128;
+
+      const source = audioContext.createMediaElementSource(audio);
+      source.connect(analyserRef.current);
+      analyserRef.current.connect(audioContext.destination);
     }
 
     if (analyserRef.current && analyserRef.current.context.state === 'suspended') {
-        analyserRef.current.context.resume();
+      analyserRef.current.context.resume();
     }
-    
+
     setIsDancing(!isDancing);
   };
 
   const TAG_PALETTE = [
-    '#FF3366', '#33CCFF', '#33FF99', '#CC33FF', '#FF9933', 
+    '#FF3366', '#33CCFF', '#33FF99', '#CC33FF', '#FF9933',
     '#1DA1F2', '#EAB308', '#EC4899', '#06B6D4', '#A3E635',
   ];
 
@@ -157,8 +157,8 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
     assigned.add(i);
     items.forEach((other, j) => {
       if (assigned.has(j)) return;
-      if (getSimilarity(item.title, other.title) > 0.4 || 
-          (item.tags && other.tags && item.tags.some(t => other.tags.includes(t)))) {
+      if (getSimilarity(item.title, other.title) > 0.4 ||
+        (item.tags && other.tags && item.tags.some(t => other.tags.includes(t)))) {
         cluster.push(j);
         assigned.add(j);
       }
@@ -202,37 +202,36 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
   const graphData = generateGraphData();
 
   return (
-    <div 
-      ref={containerRef} 
-      style={{ 
+    <div
+      ref={containerRef}
+      style={{
         backgroundColor: isDancing ? `rgba(10, 10, 11, ${1 - (beatIntensityRef.current * 0.05)})` : '#0A0A0B',
         boxShadow: isDancing ? `inset 0 0 ${beatIntensityRef.current * 100}px rgba(249, 115, 22, ${beatIntensityRef.current * 0.1})` : 'none'
       }}
       className="w-full h-full overflow-hidden relative transition-colors duration-100"
     >
-       <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs text-white/50 border border-white/5 font-black uppercase tracking-widest">
+      <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs text-white/50 border border-white/5 font-black uppercase tracking-widest">
         Graph Engine View
       </div>
 
       {interactiveOn && (
-          <button 
-            onClick={toggleDance}
-            style={{ 
-              transform: isDancing ? `scale(${1 + (beatIntensityRef.current * 0.2)})` : 'scale(1)',
-              transition: isDancing ? 'none' : 'transform 0.5s ease' 
-            }}
-            className={`absolute bottom-6 right-6 z-20 p-4 rounded-full border transition-all duration-500 shadow-2xl group ${
-                isDancing 
-                ? 'bg-orange-500 border-orange-400 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)]' 
-                : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-orange-400'
+        <button
+          onClick={toggleDance}
+          style={{
+            transform: isDancing ? `scale(${1 + (beatIntensityRef.current * 0.2)})` : 'scale(1)',
+            transition: isDancing ? 'none' : 'transform 0.5s ease'
+          }}
+          className={`absolute bottom-6 right-6 z-20 p-4 rounded-full border transition-all duration-500 shadow-2xl group ${isDancing
+              ? 'bg-orange-500 border-orange-400 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)]'
+              : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-orange-400'
             }`}
-            title="Dance with Dots (Sync with Beat)"
-          >
-            {isDancing ? <Pause size={20} className="fill-current" /> : <Music size={20} />}
-            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-3 py-1 bg-black/80 rounded-lg text-[9px] font-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
-                {isDancing ? 'Pause Dance' : 'Dance with Dots'}
-            </span>
-          </button>
+          title="Dance with Dots (Sync with Beat)"
+        >
+          {isDancing ? <Pause size={20} className="fill-current" /> : <Music size={20} />}
+          <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-3 py-1 bg-black/80 rounded-lg text-[9px] font-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            {isDancing ? 'Pause Dance' : 'Dance with Dots'}
+          </span>
+        </button>
       )}
 
       <ForceGraph2D
@@ -253,50 +252,50 @@ const KnowledgeGraph = ({ items, labelsOn, interactiveOn }) => {
         enablePanInteraction={interactiveOn}
         enableZoomInteraction={interactiveOn}
         nodeCanvasObject={(node, ctx, globalScale) => {
-            const label = node.tag || node.name?.split(' ')[0] || 'item';
-            const fontSize = Math.max(10 / globalScale, 3);
-            const intensity = beatIntensityRef.current || 0;
-            
-            const x = node.x;
-            const y = node.y;
+          const label = node.tag || node.name?.split(' ')[0] || 'item';
+          const fontSize = Math.max(10 / globalScale, 3);
+          const intensity = beatIntensityRef.current || 0;
 
-            const pulseScale = 1 + (intensity * 0.9);
-            const coreRadius = 5 * pulseScale;
-            const haloRadius = 11 * pulseScale;
+          const x = node.x;
+          const y = node.y;
 
-            // 1. Draw Halo
+          const pulseScale = 1 + (intensity * 0.9);
+          const coreRadius = 5 * pulseScale;
+          const haloRadius = 11 * pulseScale;
+
+          // 1. Draw Halo
+          ctx.beginPath();
+          ctx.arc(x, y, haloRadius, 0, 2 * Math.PI, false);
+          ctx.fillStyle = node.color + '22';
+          ctx.fill();
+          ctx.lineWidth = 0.5;
+          ctx.strokeStyle = node.color + '55';
+          ctx.stroke();
+
+          // 2. Draw Core Dot
+          ctx.beginPath();
+          ctx.arc(x, y, coreRadius, 0, 2 * Math.PI, false);
+          ctx.fillStyle = node.color;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(x, y, 1 * pulseScale, 0, 2 * Math.PI, false);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+
+          // 3. Draw Labels
+          if (labelsOn) {
+            ctx.font = `700 ${fontSize}px Inter, sans-serif`;
+            const textWidth = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
             ctx.beginPath();
-            ctx.arc(x, y, haloRadius, 0, 2 * Math.PI, false);
-            ctx.fillStyle = node.color + '22';
+            ctx.roundRect(x - textWidth / 2 - 5, y + 10 + coreRadius, textWidth + 10, fontSize + 6, 4);
             ctx.fill();
-            ctx.lineWidth = 0.5;
-            ctx.strokeStyle = node.color + '55';
-            ctx.stroke();
-
-            // 2. Draw Core Dot
-            ctx.beginPath();
-            ctx.arc(x, y, coreRadius, 0, 2 * Math.PI, false);
-            ctx.fillStyle = node.color;
-            ctx.fill();
-            
-            ctx.beginPath();
-            ctx.arc(x, y, 1 * pulseScale, 0, 2 * Math.PI, false);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             ctx.fillStyle = '#FFFFFF';
-            ctx.fill();
-
-            // 3. Draw Labels
-            if (labelsOn) {
-                ctx.font = `700 ${fontSize}px Inter, sans-serif`;
-                const textWidth = ctx.measureText(label).width;
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-                ctx.beginPath();
-                ctx.roundRect(x - textWidth / 2 - 5, y + 10 + coreRadius, textWidth + 10, fontSize + 6, 4);
-                ctx.fill();
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillText(label, x, y + 10 + coreRadius + (fontSize + 6) / 2);
-            }
+            ctx.fillText(label, x, y + 10 + coreRadius + (fontSize + 6) / 2);
+          }
         }}
       />
     </div>

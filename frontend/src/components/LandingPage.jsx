@@ -213,6 +213,32 @@ const LandingPage = ({ onGetStarted }) => {
                 </div>
             </section>
 
+            {/* Humorous Banner */}
+            <div className="w-full bg-orange-500 overflow-hidden py-4 md:py-6 border-y border-orange-600 relative z-20 flex items-center shadow-[0_0_50px_rgba(249,115,22,0.15)]">
+                <motion.div 
+                    animate={{ x: ["0%", "-50%"] }}
+                    transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
+                    className="flex text-black whitespace-nowrap w-max items-center"
+                >
+                    {[...Array(2)].map((_, arrayIndex) => (
+                        <div key={arrayIndex} className="flex items-center">
+                            {[
+                                "If you don't like Burfi (the dessert), you'll still like Burfi.",
+                                "Your brain is full. Let us hold the links.",
+                                "Built with code, caffeine, and an obsession with Indian sweets.",
+                                "Side effects: Extreme organization and sudden craving for sugar.",
+                                "Stop emailing links to yourself. Seriously."
+                            ].map((text, i) => (
+                                <React.Fragment key={i}>
+                                    <span className="text-[10px] md:text-xs font-black uppercase tracking-[4px] px-8">{text}</span>
+                                    <Sparkles size={14} className="opacity-60" />
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    ))}
+                </motion.div>
+            </div>
+
             {/* The Mechanism */}
             <section ref={mechanismRef} className="py-40 bg-[#080808] relative">
                 <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -249,7 +275,7 @@ const LandingPage = ({ onGetStarted }) => {
             </section>
 
             {/* Very Bottom Footer */}
-            <footer className="py-20 border-t border-white/5 flex flex-col md:flex-row items-center justify-between px-6 md:px-10 gap-8">
+            <footer className="py-20 bg-[#0A0A0A] flex flex-col md:flex-row items-center justify-between px-6 md:px-10 gap-8">
                 <div className="flex items-center gap-3 opacity-50">
                     <Sparkles className="text-orange-500" size={16} />
                     <span className="text-lg font-black tracking-tighter uppercase">Burfi AI</span>
